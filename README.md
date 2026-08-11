@@ -60,7 +60,7 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 | `private_chat_mode` | str | `blacklist` | 私聊过滤模式：`blacklist` / `whitelist` / `disabled` |
 | `private_chat_list` | list | `[]` | 用户 ID 列表（根据模式排除或允许） |
 
-## 如何获取 Multica API 地址和 Token
+## 如何获取 Multica API 地址、 Token 和 UUID
 
 ### 1. 获取 API 地址
 
@@ -73,6 +73,37 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 2. 进入 **设置 → API 密钥**（或 **Settings → API Keys**）
 3. 点击 **创建密钥**，输入名称（如 `AstrBot Bridge`）
 4. 复制生成的 Token，填入本插件的认证 Token 配置项
+
+### 3. 获取 UUID
+
+在Multica的Web界面输入指令来显示完整 UUID：
+
+1.查看工作区 UUID：
+
+# 当前工作区的完整信息（含 UUID）
+multica workspace get --output json
+
+# 所有工作区列表（默认 table 格式，UUID 截断显示）
+multica workspace list
+
+# 所有工作区 + 完整 UUID
+multica workspace list --full-id
+
+# JSON 格式，直接拿 id 字段
+multica workspace list --output json
+
+
+2.查看 Issue UUID：
+
+# 单个 issue 详情
+multica issue get <issue-id> --output json
+
+# issue 列表 + 完整 UUID
+multica issue list --full-id
+
+# JSON 格式
+multica issue list --output json
+
 
 > 更多细节请参考 Multica 官方文档：
 > - [快速上手](https://multica.ai/docs/zh/cloud-quickstart)
