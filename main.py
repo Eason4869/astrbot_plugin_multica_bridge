@@ -6,9 +6,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from astrbot import logger
 from astrbot.api.event import MessageEvent
 from astrbot.api.star import Context, Star
+from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .web_api import WebApiMixin
 
@@ -30,7 +33,8 @@ class Main(WebApiMixin, Star):
         try:
             from .config import CONFIG_DEFAULTS, deep_merge, load_plugin_config
 
-            data_dir = str(self.get_data_dir())
+            # AstrBot Star 基类不提供 get_data_dir()，使用官方工具函数获取插件数据目录
+            data_dir = str(Path(get_astrbot_data_path()) / "plugin_data" / self.name)
             self._data_dir = data_dir
             self.cfg = deep_merge(
                 CONFIG_DEFAULTS,

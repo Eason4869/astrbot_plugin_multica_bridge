@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
+
+from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .config import (
     CONFIG_DEFAULTS,
@@ -30,7 +33,7 @@ class WebApiMixin:
 
     context: Any
     config: Any
-    get_data_dir: Any
+    name: str
 
     def register_routes(self) -> None:
         """注册所有 Web API 路由。"""
@@ -104,12 +107,15 @@ class WebApiMixin:
             cur = dict(getattr(self, "cfg", None) or {})
             for k, v in body.items():
                 if k in CONFIG_DEFAULTS:
-                    # 跳过含掩码字符的 token 值，防止被 GET 返回的脱敏 token 覆盖
+                    # 跳过脱敏 token：前端加载配置时 token 已脱敏（如 tok****ken），
+                    # 若保存时传来的 token 含掩码标记，说明用户未修改，保留原值
                     if k == "token" and isinstance(v, str) and "****" in v:
                         continue
                     cur[k] = coerce_to_default_type(v, CONFIG_DEFAULTS[k])
 
-            data_dir = getattr(self, "_data_dir", None) or str(self.get_data_dir())
+            data_dir = getattr(self, "_data_dir", None) or str(
+                Path(get_astrbot_data_path()) / "plugin_data" / getattr(self, "name", PLUGIN_NAME)
+            )
             save_plugin_config(data_dir, cur)
             self.cfg = deep_merge(CONFIG_DEFAULTS, cur)
 

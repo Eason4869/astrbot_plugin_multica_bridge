@@ -144,6 +144,23 @@
     }
     .status-ok { background: #16a34a; }
     .status-err { background: #dc2626; }
+
+    /* 会话过滤列表 textarea */
+    .filter-list-textarea {
+      width: 100%;
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 13px;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+    }
+    .filter-list-textarea:focus { border-color: var(--accent); }
+    .filter-field { flex-direction: column; align-items: flex-start; }
+    .filter-field .field-control { margin-left: 0; }
   </style>
 </head>
 <body>
@@ -220,9 +237,9 @@
     <div class="card">
       <h2>会话过滤</h2>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-        控制插件在哪些群聊/私聊中生效，支持黑名单和白名单两种模式。
+        控制插件在哪些群聊/私聊中生效，支持黑名单、白名单和关闭三种模式。
       </p>
-      <div class="field" style="flex-direction:column;align-items:flex-start;">
+      <div class="field filter-field">
         <div style="width:100%;display:flex;align-items:center;justify-content:space-between;">
           <div>
             <div class="field-label">群聊过滤模式</div>
@@ -236,10 +253,10 @@
         </div>
         <div style="margin-top:10px;width:100%;">
           <div class="field-hint" style="margin-bottom:4px;">群聊 ID 列表（每行一个）</div>
-          <textarea id="field-group_chat_list" rows="3" style="width:100%;background:var(--input-bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;outline:none;resize:vertical;font-family:inherit;" placeholder="123456789&#10;987654321"></textarea>
+          <textarea id="field-group_chat_list" class="filter-list-textarea" rows="3" placeholder="123456789&#10;987654321"></textarea>
         </div>
       </div>
-      <div class="field" style="flex-direction:column;align-items:flex-start;">
+      <div class="field filter-field">
         <div style="width:100%;display:flex;align-items:center;justify-content:space-between;">
           <div>
             <div class="field-label">私聊过滤模式</div>
@@ -253,7 +270,7 @@
         </div>
         <div style="margin-top:10px;width:100%;">
           <div class="field-hint" style="margin-bottom:4px;">用户 ID 列表（每行一个）</div>
-          <textarea id="field-private_chat_list" rows="3" style="width:100%;background:var(--input-bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;outline:none;resize:vertical;font-family:inherit;" placeholder="123456789&#10;987654321"></textarea>
+          <textarea id="field-private_chat_list" class="filter-list-textarea" rows="3" placeholder="123456789&#10;987654321"></textarea>
         </div>
       </div>
     </div>
@@ -409,18 +426,18 @@
             el.addEventListener('change', function () {
               setField(k, el.checked);
             });
-          } else if (el.type === 'number') {
-            el.addEventListener('input', function () {
-              setField(k, parseInt(el.value, 10) || 0);
+          } else if (SELECTS.has(k)) {
+            el.addEventListener('change', function () {
+              setField(k, el.value);
             });
           } else if (LISTS.has(k)) {
             el.addEventListener('input', function () {
               var lines = el.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
               setField(k, lines);
             });
-          } else if (SELECTS.has(k)) {
-            el.addEventListener('change', function () {
-              setField(k, el.value);
+          } else if (el.type === 'number') {
+            el.addEventListener('input', function () {
+              setField(k, parseInt(el.value, 10) || 0);
             });
           } else {
             el.addEventListener('input', function () {
