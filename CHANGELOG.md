@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0] - 2026-08-12
+
+### Removed
+
+- 移除 `_conf_schema.json`：取消 AstrBot 插件管理页面中的「齿轮」配置入口。
+  AstrBot 通过 `_conf_schema.json` 生成的配置保存于其独立存储中，并在实例化插件时传入
+  `config` 参数；但插件 `initialize()` 仅从插件自有 `plugin_data/<name>/config.json`
+  构建运行配置，从未合并该 `config`，导致齿轮入口的修改不生效。
+- WebUI 设置页已覆盖全部配置项（连接参数 + 会话过滤），故统一以 WebUI 设置页为唯一配置入口。
+
+### Why
+
+- 用户反馈：WebUI 中配置正确生效，但 astrbot 插件页面齿轮入口修改配置不生效。
+- 排查确认：两套配置来源难以可靠同步（AstrBot 会用 schema 默认值覆盖未在齿轮中
+  修改过的字段，合并方向无论谁优先都会破坏另一入口的既有配置），故选取消齿轮入口。
+
 ## [0.5.0] - 2026-08-12
 
 ### Added
