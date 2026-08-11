@@ -39,7 +39,7 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
 | `enabled` | bool | `true` | 启用/停用插件 |
-| `api_url` | str | `http://localhost:8080` | Multica API 基地址 |
+| `api_url` | str | `https://multica.ai` | Multica API 基地址 |
 | `token` | str | — | Multica API 认证 Token |
 | `workspace_id` | str | — | Multica 工作区 UUID（可选，留空自动获取） |
 | `project_id` | str | — | Multica 项目 UUID（可选） |
@@ -64,10 +64,7 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 ### 1. 获取 API 地址
 
-Multica 支持自托管和云托管两种部署方式：
-
-- **Multica Cloud**：API 地址为 `https://api.multica.ai`
-- **自托管**：API 地址即为你部署 Multica 服务的服务器地址，例如 `http://your-server:8080`
+一般为 `https://multica.ai`（Multica Cloud），自托管则填入你的 Multica 服务器地址。
 
 ### 2. 获取认证 Token
 
