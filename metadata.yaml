@@ -3,6 +3,7 @@ desc: 将 AstrBot 接入 Multica 平台，支持连接测试、成本报表同�
 short_desc: AstrBot ↔ Multica 桥接插件
 version: 0.2.2
 author: 彧晟Eason
+logo: logo.svg
 repo: "https://github.com/Eason4869/astrbot_plugin_multica_bridge"
 display_name: Multica桥接
 astrbot_version: ">=4.24.2"
