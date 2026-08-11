@@ -1,8 +1,10 @@
 """Multica 桥接插件配置。
 
-配置结构：CONFIG_DEFAULTS 定义所有配置项及其默认值，
-AstrBot 的 _conf_schema.json 仅保留开关 enabled，其余所有参数存入插件自有 config.json，
-不受 schema 裁剪影响。
+配置结构：CONFIG_DEFAULTS 定义所有配置项及其默认值。
+插件不提供 _conf_schema.json（即 AstrBot 插件管理页面中的「齿轮」配置入口），
+所有配置统一通过插件自有 config.json 管理，由 WebUI 设置页 / REST API 读写。
+原因：AstrBot 通过 _conf_schema.json 生成的配置存储在 AstrBot 独立存储中，
+插件运行时从未读取该配置，会导致齿轮入口的修改不生效；两套配置来源也无法可靠同步。
 """
 
 from __future__ import annotations

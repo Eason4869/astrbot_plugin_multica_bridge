@@ -56,6 +56,10 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 所有配置项均可在 **AstrBot WebUI → 插件 → Multica桥接 → 设置** 页面中修改，修改后自动保存热生效。
 
+> 注意：插件**不提供** AstrBot 插件管理页面中的「齿轮」配置入口（`_conf_schema.json`）。
+> 齿轮入口的配置由 AstrBot 单独持久化、插件运行时并不读取，修改无法生效；
+> 因此统一以上述设置页面为唯一配置入口，避免两套配置互不同步。
+
 ### 连接配置
 
 | 配置项 | 类型 | 默认值 | 说明 |
