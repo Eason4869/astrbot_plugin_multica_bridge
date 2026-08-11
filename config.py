@@ -15,8 +15,8 @@ CONFIG_DEFAULTS: dict[str, Any] = {
     "enabled": True,
     "api_url": "http://localhost:8080",
     "token": "",
-    "workspace_id": "",
-    "project_id": "",
+    "workspace_id": "",   # 可选，留空则自动从 /api/workspace 获取
+    "project_id": "",     # 可选
     "sync_reports": False,
     "sync_interval_minutes": 60,
     # 消息过滤配置

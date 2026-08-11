@@ -5,10 +5,21 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 from urllib.parse import urljoin
 
 from .config import CONFIG_DEFAULTS
+
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def _is_uuid(value: str) -> bool:
+    """判断字符串是否为 UUID 格式。"""
+    return bool(_UUID_RE.match(value))
 
 
 def get_multica_config(cfg: dict[str, Any] | None) -> dict[str, Any]:
@@ -50,7 +61,10 @@ def check_chat_allowed(cfg: dict[str, Any] | None, chat_type: str, chat_id: str)
 
 
 class MulticaClient:
-    """Multica API 轻量客户端。"""
+    """Multica API 轻量客户端。
+
+    workspace_id 如果留空，会在首次 API 调用时自动从 /api/workspace 获取。
+    """
 
     def __init__(self, cfg: dict[str, Any] | None) -> None:
         mc = get_multica_config(cfg)
@@ -59,6 +73,7 @@ class MulticaClient:
         self._token: str = str(mc.get("token", ""))
         self._workspace_id: str = str(mc.get("workspace_id", ""))
         self._project_id: str = str(mc.get("project_id", ""))
+        self._workspace_name: str | None = None
 
     @property
     def enabled(self) -> bool:
@@ -72,7 +87,11 @@ class MulticaClient:
         }
 
     async def test_connection(self) -> dict[str, Any]:
-        """测试 Multica 连接是否正常。"""
+        """测试 Multica 连接是否正常。
+
+        成功时自动缓存 workspace_id 和 workspace_name，
+        用户无需手动填写 workspace_id 配置项。
+        """
         if not self._enabled:
             return {"ok": False, "message": "Multica 桥接未启用", "workspace_name": None}
         if not self._api_url or not self._token:
@@ -94,11 +113,17 @@ class MulticaClient:
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        name = (
-                            data.get("name")
-                            or (data.get("data", {}) or {}).get("name")
-                            or None
-                        )
+                        # 兼容两种响应结构：顶层字段 或 { data: { ... } }
+                        inner = data if isinstance(data, dict) else {}
+                        if "data" in inner and isinstance(inner.get("data"), dict):
+                            inner = inner["data"]
+                        name = inner.get("name") or None
+                        wsid = inner.get("id") or None
+                        # 自动缓存（当前值非 UUID 时覆盖）
+                        if wsid and not _is_uuid(self._workspace_id):
+                            self._workspace_id = str(wsid)
+                        if name:
+                            self._workspace_name = str(name)
                         return {"ok": True, "message": "连接成功", "workspace_name": name}
                     body = await resp.text()
                     return {
@@ -113,12 +138,29 @@ class MulticaClient:
                 "workspace_name": None,
             }
 
+    async def _ensure_workspace_id(self) -> None:
+        """如果 workspace_id 为空或不是 UUID 格式，调用 /api/workspace 自动获取。"""
+        if self._workspace_id and _is_uuid(self._workspace_id):
+            return
+        result = await self.test_connection()
+        if not result["ok"]:
+            raise RuntimeError(
+                f"无法自动获取 workspace_id: {result['message']}。"
+                "请检查 api_url 和 token 是否正确，或手动填写 workspace_id。"
+            )
+
     async def sync_data(self, payload: dict[str, Any]) -> dict[str, Any]:
         """同步数据到 Multica。"""
         if not self._enabled:
             return {"ok": False, "message": "桥接未启用"}
         if not self._api_url or not self._token:
             return {"ok": False, "message": "API 地址或 Token 未配置"}
+
+        # 自动发现 workspace_id
+        try:
+            await self._ensure_workspace_id()
+        except RuntimeError as e:
+            return {"ok": False, "message": str(e)}
 
         import aiohttp
 

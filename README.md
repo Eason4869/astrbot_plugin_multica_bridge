@@ -41,7 +41,7 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 | `enabled` | bool | `true` | 启用/停用插件 |
 | `api_url` | str | `http://localhost:8080` | Multica API 基地址 |
 | `token` | str | — | Multica API 认证 Token |
-| `workspace_id` | str | — | Multica 工作区 UUID |
+| `workspace_id` | str | — | Multica 工作区 UUID（可选，留空自动获取） |
 | `project_id` | str | — | Multica 项目 UUID（可选） |
 
 ### 同步配置
@@ -80,10 +80,9 @@ Multica 支持自托管和云托管两种部署方式：
 > - [快速上手](https://multica.ai/docs/zh/cloud-quickstart)
 > - [认证与令牌](https://multica.ai/docs/zh/auth-tokens)
 
-### 3. 获取工作区 ID
+### 3. 获取工作区 ID（可选）
 
-1. 在 Multica Web 控制台进入目标工作区
-2. URL 中的 UUID 即为工作区 ID，或在 **工作区设置** 中查看
+插件会自动从 API 获取工作区 ID，**一般无需手动填写**。如果你需要手动指定，可在 Multica Web 控制台的工作区设置中查看 UUID。
 
 ## 指令
 

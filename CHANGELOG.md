@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2] - 2026-08-11
+
+### Changed
+
+- `workspace_id` 改为可选：留空时自动从 `/api/workspace` 获取 UUID 并缓存，用户只需配 `api_url` + `token` 两项即可
+- `test_connection()` 成功时自动缓存 workspace_id 和 workspace_name
 ## [0.2.1] - 2026-08-11
 
 ### Fixed
