@@ -102,10 +102,12 @@ class Main(WebApiMixin, Star):
         try:
             text = (event.message_str or "").strip()
 
-            # CommandFilter 模式下 AstrBot 已剥离 /multica 前缀，
-            # 兼容直接调用时保留前缀的旧路径
+            # CommandFilter 只剥离 / 前缀，text 实际为 "multica <args>"
+            # 同时兼容直接调用时保留 /multica 前缀的旧路径
             if text.startswith("/multica"):
                 text = text[len("/multica"):].strip()
+            elif text.startswith("multica"):
+                text = text[len("multica"):].strip()
 
             # 检查黑/白名单
             from .multica_client import check_chat_allowed
