@@ -6,6 +6,8 @@
 
 将 AstrBot QQ 机器人接入 [Multica](https://multica.ai) 平台，实现连接测试、数据同步、ChatOps 等功能。
 
+---
+
 ## 功能
 
 - **连接测试**：一键验证 Multica API 连通性
@@ -14,6 +16,8 @@
 - **Token 安全**：API 返回配置时自动脱敏敏感字段，防止误保存覆盖
 - **会话过滤**：支持群聊/私聊的黑白名单模式，精准控制插件生效范围
 - **命令交互**：支持 `/multica` 系列指令，在聊天中直接操作
+
+---
 
 ## 安装
 
@@ -29,6 +33,8 @@
 cd AstrBot/data/plugins
 git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 ```
+
+---
 
 ## 配置
 
@@ -60,6 +66,8 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 | `private_chat_mode` | str | `blacklist` | 私聊过滤模式：`blacklist` / `whitelist` / `disabled` |
 | `private_chat_list` | list | `[]` | 用户 ID 列表（根据模式排除或允许） |
 
+---
+
 ## 如何获取 Multica API 地址、 Token 和 UUID
 
 ### 1. 获取 API 地址
@@ -74,15 +82,16 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 3. 点击 **创建密钥**，输入名称（如 `AstrBot Bridge`）
 4. 复制生成的 Token，填入本插件的认证 Token 配置项
 
-### 3. 获取 UUID
+### 3. 获取工作区及issue UUID（可选）
 
+插件会自动获取工作区 ID，**一般无需手动填写**。如果你需要手动指定，可在 Multica Web 控制台的工作区设置中查看 UUID。
 
 
 **1. Multica Web 界面（浏览器）**
 
 在 Web 界面的聊天输入框中直接输入命令即可，无需额外安装任何工具。
 
-### 获取工作区 UUID
+**获取工作区 UUID**
 
 ```bash
 # 查看当前工作区完整信息（含 UUID、名称、描述、仓库等）
@@ -97,7 +106,7 @@ multica workspace list --full-id
 
 JSON 输出中的 `id` 字段即为完整 UUID。
 
-### 获取 Issue UUID
+**获取 Issue UUID**
 
 ```bash
 # 查看单个 Issue 详情（含完整 UUID）
@@ -113,20 +122,20 @@ multica issue list --full-id
 
 `<issue-id>` 可以是 Issue Key（如 `WS-34`）、完整 UUID，或 UUID 前缀（≥4 位十六进制）。
 
-### 参数说明
+**参数说明**
 
 |参数|作用|适用场景|
 |-|-|-|
 |`--output json`|输出结构化 JSON，`id` 字段天然为完整 UUID|脚本处理、自动化、`jq` 解析|
 |`--full-id`|表格模式下展开 UUID 列为完整值|人眼查看、复制粘贴|
 
----
+
 
 **2. Multica CLI（本地终端）**
 
 适用于 Windows / macOS / Linux 本地终端，需先安装并登录。
 
-### 安装与登录
+**安装与登录**
 
 ```bash
 # 安装 Multica CLI（具体安装方式参考官方文档）
@@ -136,7 +145,7 @@ multica issue list --full-id
 multica login
 ```
 
-### 获取工作区 UUID
+**获取工作区 UUID**
 
 ```bash
 # 查看当前工作区完整信息
@@ -152,7 +161,7 @@ multica workspace list --output json
 multica workspace list --full-id
 ```
 
-### 获取 Issue UUID
+**获取 Issue UUID**
 
 ```bash
 # 查看单个 Issue
@@ -166,15 +175,15 @@ multica issue list --status in\\\_review --full-id
 multica issue list --assignee "agent:AstrBot-运维" --output json
 ```
 
-### CLI 特有优势
+**CLI 特有优势**
 
 * 支持管道和脚本：`multica issue list --output json | jq '.\\\[].id'`
 * 可批量筛选（按状态、负责人、优先级等）
 * 可集成到自动化工作流
 
----
 
-## 三、快速对照
+
+**快速对照**
 
 |操作|Web 界面|CLI 本地终端|
 |-|-|-|
@@ -196,9 +205,7 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 > - [快速上手](https://multica.ai/docs/zh/cloud-quickstart)
 > - [认证与令牌](https://multica.ai/docs/zh/auth-tokens)
 
-### 3. 获取工作区 ID（可选）
-
-插件会自动获取工作区 ID，**一般无需手动填写**。如果你需要手动指定，可在 Multica Web 控制台的工作区设置中查看 UUID。
+---
 
 ## 指令
 
@@ -212,6 +219,8 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 
 指令受会话过滤配置（黑白名单）控制。
 
+---
+
 ## API 端点
 
 | 方法 | 路径 | 说明 |
@@ -220,6 +229,8 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 | POST | `/api/plug/astrbot_plugin_multica_bridge/actions/save_config` | 保存配置 |
 | POST | `/api/plug/astrbot_plugin_multica_bridge/actions/test_connection` | 测试连接 |
 | POST | `/api/plug/astrbot_plugin_multica_bridge/actions/sync` | 同步数据 |
+
+---
 
 ## 开发
 
@@ -232,9 +243,13 @@ cd astrbot_plugin_multica_bridge
 # 将本目录软链接或复制到 AstrBot/data/plugins/
 ```
 
+---
+
 ## 更新日志
 
 详见 [CHANGELOG.md](CHANGELOG.md)
+
+---
 
 ## 许可证
 
