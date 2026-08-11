@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0] - 2026-08-11
+
+### Added
+
+- 新增 `/multica issue create <标题> [--desc 描述]` 指令：通过 HTTP API 直接创建 Issue，不依赖本机安装 `multica` CLI / PATH
+- `MulticaClient.create_issue()`：调用 `POST /api/issues`，字段与 CLI 对齐（title/description/priority/status/assignee_id/project_id/parent_issue_id/due_date/labels）
+
+### Why
+
+- 用户在 QQ 要求新建 Issue 时，AstrBot 的 LLM agent 通过 `astrbot_execute_shell` 调用 `multica` CLI，
+  但 AstrBot 进程环境是启动时快照：若 `multica` 安装/加入 PATH 发生在 AstrBot 启动之后，
+  其子进程（PowerShell）找不到 `multica`，LLM 便误报“本机未安装 multica”。
+- 本版本提供不依赖 CLI 的创建路径；同时保持 CLI 可用（AstrBot 重启后 PATH 即刷新）。
+
 ## [0.2.2] - 2026-08-11
 
 ### Fixed

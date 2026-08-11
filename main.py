@@ -130,6 +130,8 @@ class Main(WebApiMixin, Star):
                 await self._cmd_status(event)
             elif sub in ("sync", "同步"):
                 await self._cmd_sync(event)
+            elif sub in ("issue", "议题"):
+                await self._cmd_issue(event, text[len(sub):].strip())
             else:
                 await self._reply(event, f"未知子命令: {sub}\n发送 /multica help 查看帮助")
 
@@ -142,7 +144,8 @@ class Main(WebApiMixin, Star):
             "Multica 桥接插件命令：\n"
             "/multica help  — 显示此帮助\n"
             "/multica status — 检查 Multica 连接状态\n"
-            "/multica sync — 手动触发数据同步"
+            "/multica sync — 手动触发数据同步\n"
+            "/multica issue create <标题> [--desc 描述] — 新建 Issue"
         )
         await self._reply(event, help_text)
 
@@ -166,6 +169,44 @@ class Main(WebApiMixin, Star):
             await self._reply(event, "数据同步已触发")
         else:
             await self._reply(event, f"同步失败: {result['message']}")
+
+    async def _cmd_issue(self, event: AstrMessageEvent, args: str) -> None:
+        """处理 /multica issue 子命令。
+
+        通过 HTTP API 创建 Issue，不依赖本机是否安装 multica CLI
+        （避免“本机未安装 multica”误报）。
+        """
+        from .multica_client import MulticaClient
+
+        parts = args.split()
+        if not parts or parts[0] not in ("create", "新建"):
+            await self._reply(
+                event,
+                "用法：/multica issue create <标题> [--desc 描述]\n"
+                "示例：/multica issue create 修复登录失败 --desc 用户反馈登录超时",
+            )
+            return
+
+        # 解析标题与可选描述（--desc 之前为标题）
+        tokens = parts[1:]
+        desc = ""
+        if "--desc" in tokens:
+            idx = tokens.index("--desc")
+            title = " ".join(tokens[:idx]).strip()
+            desc = " ".join(tokens[idx + 1:]).strip()
+        else:
+            title = " ".join(tokens).strip()
+
+        if not title:
+            await self._reply(event, "标题不能为空。用法：/multica issue create <标题>")
+            return
+
+        client = MulticaClient(self.cfg)
+        result = await client.create_issue(title=title, description=desc)
+        if result["ok"]:
+            await self._reply(event, f"✅ {result['message']}")
+        else:
+            await self._reply(event, f"❌ 创建失败：{result['message']}")
 
     @staticmethod
     async def _reply(event: AstrMessageEvent, text: str) -> None:
