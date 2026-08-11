@@ -14,6 +14,7 @@
 - **配置热生效**：WebUI 中修改配置后即时生效，无需重载
 - **Issue 创建**：支持通过 `/multica issue create` 在聊天中直接新建 Issue
 - **工作区管理**：支持通过 `/multica workspace` 列出、切换、创建工作区
+- **收件箱同步**：支持通过 `/multica inbox` 在聊天中查看最近 Issue 及进展
 - **Token 安全**：API 返回配置时自动脱敏敏感字段，防止误保存覆盖
 - **会话过滤**：支持群聊/私聊的黑白名单模式，精准控制插件生效范围
 - **命令交互**：支持 `/multica` 系列指令，在聊天中直接操作
@@ -213,10 +214,14 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 | `/multica workspace list` | 列出当前 Token 可访问的所有工作区 |
 | `/multica workspace select <id|slug>` | 切换当前工作区（持久化到插件 config.json，重启后仍生效） |
 | `/multica workspace create <名称> [--slug slug] [--desc 描述]` | 创建工作区（slug 缺省时按名称自动生成） |
+| `/multica inbox [数量] [open\|done]` | 查看收件箱：最近 Issue（默认 10 条，按更新时间倒序）；`open` 只看未完成，`done` 只看已完成/已取消 |
 
 > 提示：`/multica issue create` 直接调用 Multica HTTP API 创建 Issue，
 > 不依赖本机是否安装 `multica` CLI、也不要求 CLI 加入 PATH，
 > 可避免“本机未安装 multica”这类误报。
+
+> 提示：`/multica inbox` 同样直接调用 Multica HTTP API（`GET /api/issues`），
+> 每条包含状态图标、编号、标题、优先级与指派人，列表紧凑避免刷屏。
 
 指令受会话过滤配置（黑白名单）控制。
 

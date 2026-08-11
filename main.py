@@ -17,6 +17,29 @@ from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 from .web_api import WebApiMixin
 
 
+_STATUS_ICONS = {
+    "todo": "🔴",
+    "in_progress": "🟡",
+    "in_review": "🔵",
+    "backlog": "⚪",
+    "done": "🟢",
+    "cancelled": "⚫",
+}
+
+_PRIORITY_LABELS = {
+    "urgent": "紧急",
+    "high": "高",
+    "medium": "中",
+    "low": "低",
+}
+
+_ASSIGNEE_LABELS = {
+    "agent": "智能体",
+    "squad": "团队",
+    "member": "成员",
+}
+
+
 class Main(WebApiMixin, Star):
     """Multica 桥接插件入口。
 
@@ -133,6 +156,8 @@ class Main(WebApiMixin, Star):
                 await self._cmd_issue(event, args)
             elif sub in ("workspace", "工作区"):
                 await self._cmd_workspace(event, args)
+            elif sub in ("inbox", "收件箱"):
+                await self._cmd_inbox(event, args)
             else:
                 await self._reply(event, f"未知子命令: {sub}\n发送 /multica help 查看帮助")
 
@@ -148,7 +173,8 @@ class Main(WebApiMixin, Star):
             "/multica issue create <标题> [--desc 描述] — 新建 Issue\n"
             "/multica workspace list — 列出可访问的工作区\n"
             "/multica workspace select <id|slug> — 切换当前工作区（持久化）\n"
-            "/multica workspace create <名称> [--slug slug] [--desc 描述] — 创建工作区"
+            "/multica workspace create <名称> [--slug slug] [--desc 描述] — 创建工作区\n"
+            "/multica inbox [数量] [open|done] — 查看收件箱（最近 Issue 及进展）"
         )
         await self._reply(event, help_text)
 
@@ -371,6 +397,93 @@ class Main(WebApiMixin, Star):
         except Exception as e:
             logger.error("[multica_bridge] 保存配置失败: %s", e)
             raise
+
+    async def _cmd_inbox(self, event: AstrMessageEvent, args: str) -> None:
+        """处理 /multica inbox 子命令：展示最近 Issue 与进展。"""
+        tokens = args.split()
+        status_filter = ""  # "" 全部 / "open" 未完成 / "done" 已完成
+        count = 10
+        for tok in tokens:
+            if tok in ("open", "进行中"):
+                status_filter = "open"
+            elif tok in ("done", "已完成"):
+                status_filter = "done"
+            elif tok.isdigit():
+                count = max(1, min(int(tok), 50))
+            else:
+                await self._reply(
+                    event,
+                    "用法：/multica inbox [数量] [open|done]\n"
+                    "示例：/multica inbox 10、/multica inbox open、/multica inbox done 10",
+                )
+                return
+
+        from .multica_client import MulticaClient
+
+        client = MulticaClient(self.cfg)
+        # API 不支持按 updated_at 排序，拉取较新窗口后在本地方完成排序与截断
+        result = await client.list_issues(limit=50)
+        if not result["ok"]:
+            await self._reply(event, f"❌ 获取收件箱失败：{result['message']}")
+            return
+
+        issues = result.get("issues") or []
+        if status_filter == "open":
+            issues = [
+                i for i in issues
+                if (i.get("status") or "") not in ("done", "cancelled")
+            ]
+        elif status_filter == "done":
+            issues = [
+                i for i in issues
+                if (i.get("status") or "") in ("done", "cancelled")
+            ]
+
+        issues.sort(key=lambda i: i.get("updated_at") or "", reverse=True)
+        issues = issues[:count]
+
+        if not issues:
+            empty_msg = {
+                "": "当前收件箱为空",
+                "open": "当前没有未完成的 Issue",
+                "done": "当前没有已完成的 Issue",
+            }[status_filter]
+            await self._reply(event, f"📭 {empty_msg}")
+            return
+
+        names = await client.resolve_assignee_names()
+        head = f"📥 Multica 收件箱（最近 {len(issues)} 条"
+        if status_filter == "open":
+            head += " · 未完成"
+        elif status_filter == "done":
+            head += " · 已完成/已取消"
+        head += "）"
+        lines = [self._format_issue(i, names) for i in issues]
+        await self._reply(event, head + "\n" + "\n".join(lines))
+
+    @staticmethod
+    def _format_issue(issue: dict, names: dict | None = None) -> str:
+        """把单条 Issue 压缩为一行：状态图标 + 编号 + 标题 + 优先级 + 指派人。"""
+        status = str(issue.get("status") or "")
+        icon = _STATUS_ICONS.get(status, "🔘")
+        ident = str(issue.get("identifier") or issue.get("id") or "?")
+        title = " ".join(str(issue.get("title") or "").split())
+        if len(title) > 40:
+            title = title[:39] + "…"
+
+        line = f"{icon} {ident} {title}"
+        prio = str(issue.get("priority") or "")
+        if prio and prio != "none":
+            line += f" [{_PRIORITY_LABELS.get(prio, prio)}]"
+        assignee_id = issue.get("assignee_id")
+        if assignee_id:
+            name = (names or {}).get(str(assignee_id))
+            if not name:
+                atype = str(issue.get("assignee_type") or "")
+                name = _ASSIGNEE_LABELS.get(atype, atype) or None
+            if name:
+                line += f" ({name})"
+        return line
 
     @staticmethod
     async def _reply(event: AstrMessageEvent, text: str) -> None:

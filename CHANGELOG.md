@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.5.0] - 2026-08-11
+## [0.5.0] - 2026-08-12
 
 ### Added
 
@@ -12,11 +12,20 @@
 - `MulticaClient` 新增 `list_workspaces()`、`create_workspace()`，并重构 `test_connection()`
   复用列表接口；`_ensure_workspace_id()` 改为按已配置的 workspace_id/slug 精确匹配当前工作区
 - `/multica help` 与 WebUI「指令说明」卡片同步新增 workspace 命令
+- 新增 `/multica inbox [数量] [open|done]` 指令：在聊天中查看工作区收件箱（最近 Issue 及进展）
+  - 默认显示最近 10 条，按更新时间倒序，每条含状态图标、编号、标题、优先级、指派人
+  - `open` 仅显示未完成（非 done/cancelled）；`done` 仅显示已完成/已取消
+  - 数量参数生效（1-50，防止刷屏）
+- `MulticaClient.list_issues()`：调用 `GET /api/issues`，query 参数传 workspace_id（与 `create_issue` 一致），支持 status/limit/sort/direction 过滤
+- `MulticaClient.resolve_assignee_names()`：best-effort 解析指派人名称（智能体/团队/成员），端点失败自动降级，不影响主流程
+- `/multica help`、README、WebUI 指令说明同步新增 inbox 命令
 
 ### Why
 
 - 用户需要在不打开 Web 控制台的情况下查看/切换多个工作区，并直接在聊天中创建新工作区；
   工作区选择仅持久化配置，无独立 API 调用。
+- 用户希望在聊天中随时掌握 Multica Issue 的状态与进展，无需打开 Web 控制台。
+- API 不支持按 `updated_at` 排序（实测报错），故拉取较新窗口后在本地完成排序。
 
 ## [0.4.0] - 2026-08-11
 
