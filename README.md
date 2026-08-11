@@ -4,7 +4,19 @@
   <img src="logo.svg" width="96" height="96" alt="Multica Bridge Logo" />
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/AstrBot-Multica%20Bridge-4f8cff" alt="AstrBot Multica Bridge" />
+  <img src="https://img.shields.io/badge/Multica-API-8b5cf6" alt="Multica API" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License" />
+  <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs Welcome" />
+</p>
+
 将 AstrBot QQ 机器人接入 [Multica](https://multica.ai) 平台，实现连接测试、ChatOps 等功能。
+
+<p align="center">
+  <img src="assets/divider.gif" width="480" alt="数据流动分隔线" />
+</p>
 
 ---
 
@@ -257,6 +269,18 @@ cd astrbot_plugin_multica_bridge
 ## 更新日志
 
 详见 [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## 赞助
+
+如果这个项目对你有帮助，欢迎扫码打赏支持一下：
+
+<p align="center">
+  <img src="donate-qr.jpg" width="240" alt="微信/支付宝收款码" />
+  <br />
+  <sub>微信 / 支付宝 扫码打赏</sub>
+</p>
 
 ---
 
