@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0] - 2026-08-11
+
+### Removed
+
+- 移除 `/multica sync` 指令、`MulticaClient.sync_data()` 及 WebUI `/actions/sync` 端点：
+  Multica API 不存在 `POST /api/data/sync` 端点（实测返回 `HTTP 404: 404 page not found`），
+  该「数据同步」功能从无服务器端支撑，无法正常工作。
+- 移除 `sync_reports`、`sync_interval_minutes` 配置项及 WebUI「同步设置」区域。
+
+### Why
+
+- 用户报告 `/multica sync` 返回 `同步失败: HTTP 404: 404 page not found`。
+- 排查确认：Multica API 未提供任何通用数据同步端点，插件不应再请求不存在的路径。
+
 ## [0.3.0] - 2026-08-11
 
 ### Added

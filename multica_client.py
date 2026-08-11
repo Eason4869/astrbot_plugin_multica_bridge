@@ -1,6 +1,6 @@
 """Multica API 客户端。
 
-提供连接测试、报表同步等桥接功能。
+提供连接测试、Issue 创建等桥接功能。
 """
 
 from __future__ import annotations
@@ -261,37 +261,3 @@ class MulticaClient:
                 "ok": False,
                 "message": f"创建失败：{type(e).__name__}: {e}",
             }
-
-    async def sync_data(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """同步数据到 Multica。"""
-        if not self._enabled:
-            return {"ok": False, "message": "桥接未启用"}
-        if not self._api_url or not self._token:
-            return {"ok": False, "message": "API 地址或 Token 未配置"}
-
-        # 自动发现 workspace_id
-        try:
-            await self._ensure_workspace_id()
-        except RuntimeError as e:
-            return {"ok": False, "message": str(e)}
-
-        import aiohttp
-
-        payload["workspace_id"] = self._workspace_id
-        payload["project_id"] = self._project_id
-
-        try:
-            url = urljoin(self._api_url + "/", "api/data/sync")
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url,
-                    headers=self._headers(),
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=30),
-                ) as resp:
-                    if resp.status in (200, 201, 204):
-                        return {"ok": True, "message": "同步成功"}
-                    body = await resp.text()
-                    return {"ok": False, "message": f"HTTP {resp.status}: {body[:200]}"}
-        except Exception as e:
-            return {"ok": False, "message": f"同步失败：{type(e).__name__}: {e}"}

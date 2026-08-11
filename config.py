@@ -15,10 +15,8 @@ CONFIG_DEFAULTS: dict[str, Any] = {
     "enabled": True,
     "api_url": "https://multica.ai",
     "token": "",
-    "workspace_id": "",   # 可选，留空则自动从 /api/workspace 获取
+    "workspace_id": "",   # 可选，留空则自动从 /api/workspaces 获取
     "project_id": "",     # 可选
-    "sync_reports": False,
-    "sync_interval_minutes": 60,
     # 消息过滤配置
     "group_chat_mode": "blacklist",       # "blacklist" | "whitelist" | "disabled"
     "group_chat_list": [],                # 群号列表

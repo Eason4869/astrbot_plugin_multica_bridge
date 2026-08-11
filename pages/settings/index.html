@@ -222,28 +222,6 @@
       </div>
     </div>
 
-    <!-- Sync Settings -->
-    <div class="card">
-      <h2>同步设置</h2>
-      <div class="field">
-        <div>
-          <div class="field-label">自动同步数据</div>
-          <div class="field-hint">开启后定期自动同步到 Multica</div>
-        </div>
-        <label class="switch field-control">
-          <input type="checkbox" id="field-sync_reports" />
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="field">
-        <div>
-          <div class="field-label">同步间隔（分钟）</div>
-          <div class="field-hint">建议 60 分钟</div>
-        </div>
-        <input type="number" id="field-sync_interval_minutes" class="field-control" min="1" value="60" />
-      </div>
-    </div>
-
     <!-- Chat Filter Settings -->
     <div class="card">
       <h2>会话过滤</h2>
@@ -295,7 +273,6 @@
       <table class="cmd-table">
         <tr><td><code>/multica help</code></td><td>显示帮助信息</td></tr>
         <tr><td><code>/multica status</code></td><td>检查 Multica 连接状态</td></tr>
-        <tr><td><code>/multica sync</code></td><td>手动触发数据同步</td></tr>
         <tr><td><code>/multica issue create &lt;标题&gt; [--desc 描述]</code></td><td>通过 API 新建 Issue（不依赖本机 CLI）</td></tr>
       </table>
     </div>
@@ -304,7 +281,7 @@
     <div class="card">
       <h2>连接测试</h2>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-        测试 Multica API 连通性，确保配置正确后再启用自动同步。
+        测试 Multica API 连通性与 Token 有效性。
       </p>
       <div class="btn-row">
         <button class="btn btn-primary" id="btn-test">测试连接</button>
@@ -318,8 +295,8 @@
   <script>
     (function () {
       const PLUGIN_NAME = 'astrbot_plugin_multica_bridge';
-      const FIELDS = ['enabled', 'api_url', 'token', 'workspace_id', 'project_id', 'sync_reports', 'sync_interval_minutes', 'group_chat_mode', 'group_chat_list', 'private_chat_mode', 'private_chat_list'];
-      const BOOLS = new Set(['enabled', 'sync_reports']);
+      const FIELDS = ['enabled', 'api_url', 'token', 'workspace_id', 'project_id', 'group_chat_mode', 'group_chat_list', 'private_chat_mode', 'private_chat_list'];
+      const BOOLS = new Set(['enabled']);
       const LISTS = new Set(['group_chat_list', 'private_chat_list']);
       const SELECTS = new Set(['group_chat_mode', 'private_chat_mode']);
 

@@ -1,7 +1,7 @@
 {
   "enabled": {
     "description": "启用 Multica 桥接",
-    "hint": "总开关。开启后将定期向 Multica 平台同步数据",
+    "hint": "总开关。开启后允许使用 /multica 系列指令连接 Multica 平台",
     "type": "bool",
     "default": true
   },

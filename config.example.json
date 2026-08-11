@@ -4,8 +4,6 @@
   "token": "",
   "workspace_id": "",
   "project_id": "",
-  "sync_reports": false,
-  "sync_interval_minutes": 60,
   "group_chat_mode": "blacklist",
   "group_chat_list": [],
   "private_chat_mode": "blacklist",

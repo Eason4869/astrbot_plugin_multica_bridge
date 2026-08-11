@@ -1,6 +1,6 @@
 """Multica 桥接插件主入口。
 
-将 AstrBot 接入 Multica 平台：连接测试、成本报表同步、诊断结果推送。
+将 AstrBot 接入 Multica 平台：连接测试、通过聊天指令创建 Issue。
 所有配置通过 WebUI 设置页管理，修改后自动保存热生效。
 """
 
@@ -21,7 +21,7 @@ class Main(WebApiMixin, Star):
     """Multica 桥接插件入口。
 
     继承 WebApiMixin 注册 REST API（/config、/actions/save_config、
-    /actions/test_connection、/actions/sync），Star 提供 AstrBot 运行时能力。
+    /actions/test_connection），Star 提供 AstrBot 运行时能力。
     """
 
     def __init__(self, context: Context, config: dict | None = None) -> None:
@@ -128,8 +128,6 @@ class Main(WebApiMixin, Star):
                 await self._cmd_help(event)
             elif sub in ("status", "状态"):
                 await self._cmd_status(event)
-            elif sub in ("sync", "同步"):
-                await self._cmd_sync(event)
             elif sub in ("issue", "议题"):
                 await self._cmd_issue(event, text[len(sub):].strip())
             else:
@@ -144,7 +142,6 @@ class Main(WebApiMixin, Star):
             "Multica 桥接插件命令：\n"
             "/multica help  — 显示此帮助\n"
             "/multica status — 检查 Multica 连接状态\n"
-            "/multica sync — 手动触发数据同步\n"
             "/multica issue create <标题> [--desc 描述] — 新建 Issue"
         )
         await self._reply(event, help_text)
@@ -159,16 +156,6 @@ class Main(WebApiMixin, Star):
             await self._reply(event, f"Multica 连接正常{(' — ' + name) if name else ''}")
         else:
             await self._reply(event, f"Multica 连接失败: {result['message']}")
-
-    async def _cmd_sync(self, event: AstrMessageEvent) -> None:
-        from .multica_client import MulticaClient
-
-        client = MulticaClient(self.cfg)
-        result = await client.sync_data({"source": "command"})
-        if result["ok"]:
-            await self._reply(event, "数据同步已触发")
-        else:
-            await self._reply(event, f"同步失败: {result['message']}")
 
     async def _cmd_issue(self, event: AstrMessageEvent, args: str) -> None:
         """处理 /multica issue 子命令。

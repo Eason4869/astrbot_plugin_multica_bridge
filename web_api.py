@@ -1,6 +1,6 @@
 """Multica 桥接插件 Web API。
 
-提供连接测试、配置保存、数据同步等 REST 接口。
+提供连接测试、配置保存等 REST 接口。
 """
 
 from __future__ import annotations
@@ -53,12 +53,6 @@ class WebApiMixin:
                     self.api_action_test_connection,
                     ["POST"],
                     "测试 Multica 连接",
-                ),
-                (
-                    f"{prefix}/actions/sync",
-                    self.api_action_sync,
-                    ["POST"],
-                    "同步数据到 Multica",
                 ),
             ]
             for route, handler, methods, desc in routes:
@@ -130,23 +124,6 @@ class WebApiMixin:
 
             client = MulticaClient(getattr(self, "cfg", None))
             result = await client.test_connection()
-            return self._ok(result)
-        except Exception as e:
-            return self._err(str(e))
-
-    async def api_action_sync(self, **kwargs: Any) -> dict[str, Any]:
-        """POST /actions/sync：同步数据到 Multica。"""
-        try:
-            from quart import request
-
-            from .multica_client import MulticaClient
-
-            try:
-                body = await request.json
-            except Exception:
-                body = {}
-            client = MulticaClient(getattr(self, "cfg", None))
-            result = await client.sync_data(body if isinstance(body, dict) else {})
             return self._ok(result)
         except Exception as e:
             return self._err(str(e))

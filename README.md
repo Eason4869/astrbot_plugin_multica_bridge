@@ -4,7 +4,7 @@
   <img src="logo.svg" width="96" height="96" alt="Multica Bridge Logo" />
 </p>
 
-将 AstrBot QQ 机器人接入 [Multica](https://multica.ai) 平台，实现连接测试、数据同步、ChatOps 等功能。
+将 AstrBot QQ 机器人接入 [Multica](https://multica.ai) 平台，实现连接测试、ChatOps 等功能。
 
 ---
 
@@ -12,7 +12,7 @@
 
 - **连接测试**：一键验证 Multica API 连通性
 - **配置热生效**：WebUI 中修改配置后即时生效，无需重载
-- **数据同步**：支持将 AstrBot 运行数据同步到 Multica 工作区
+- **Issue 创建**：支持通过 `/multica issue create` 在聊天中直接新建 Issue
 - **Token 安全**：API 返回配置时自动脱敏敏感字段，防止误保存覆盖
 - **会话过滤**：支持群聊/私聊的黑白名单模式，精准控制插件生效范围
 - **命令交互**：支持 `/multica` 系列指令，在聊天中直接操作
@@ -49,13 +49,6 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 | `token` | str | — | Multica API 认证 Token |
 | `workspace_id` | str | — | Multica 工作区 UUID（可选，留空自动获取） |
 | `project_id` | str | — | Multica 项目 UUID（可选） |
-
-### 同步配置
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `sync_reports` | bool | `false` | 启用自动同步 |
-| `sync_interval_minutes` | int | `60` | 同步间隔（分钟） |
 
 ### 会话过滤
 
@@ -215,7 +208,6 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 |------|------|
 | `/multica help` | 显示帮助信息 |
 | `/multica status` | 检查 Multica 连接状态 |
-| `/multica sync` | 手动触发一次数据同步 |
 | `/multica issue create <标题> [--desc 描述]` | 通过 API 新建 Issue（不依赖本机 CLI） |
 
 > 提示：`/multica issue create` 直接调用 Multica HTTP API 创建 Issue，
@@ -233,7 +225,6 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 | GET | `/api/plug/astrbot_plugin_multica_bridge/config` | 获取当前配置（token 脱敏） |
 | POST | `/api/plug/astrbot_plugin_multica_bridge/actions/save_config` | 保存配置 |
 | POST | `/api/plug/astrbot_plugin_multica_bridge/actions/test_connection` | 测试连接 |
-| POST | `/api/plug/astrbot_plugin_multica_bridge/actions/sync` | 同步数据 |
 
 ---
 
