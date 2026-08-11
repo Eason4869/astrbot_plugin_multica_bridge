@@ -66,7 +66,7 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 Multica 支持自托管和云托管两种部署方式：
 
-- **Multica Cloud**：API 地址为 `https://api.multica.ai`（[待确认]）
+- **Multica Cloud**：API 地址为 `https://api.multica.ai`
 - **自托管**：API 地址即为你部署 Multica 服务的服务器地址，例如 `http://your-server:8080`
 
 ### 2. 获取认证 Token
@@ -76,7 +76,9 @@ Multica 支持自托管和云托管两种部署方式：
 3. 点击 **创建密钥**，输入名称（如 `AstrBot Bridge`）
 4. 复制生成的 Token，填入本插件的认证 Token 配置项
 
-> 更多细节请参考 Multica 官方文档：[Multica Documentation](https://docs.multica.ai)（[待确认]）
+> 更多细节请参考 Multica 官方文档：
+> - [快速上手](https://multica.ai/docs/zh/cloud-quickstart)
+> - [认证与令牌](https://multica.ai/docs/zh/auth-tokens)
 
 ### 3. 获取工作区 ID
 
