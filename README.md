@@ -64,7 +64,8 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 ### 1. 获取 API 地址
 
-一般为 `https://multica.ai`（Multica Cloud），自托管则填入你的 Multica 服务器地址。
+1. Multica Cloud模式（推荐）：一般为 `https://multica.ai`
+2. 自托管模式：一般为你的 Multica 服务器地址（未经测试验证）
 
 ### 2. 获取认证 Token
 
@@ -79,7 +80,7 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 ### 3. 获取工作区 ID（可选）
 
-插件会自动从 API 获取工作区 ID，**一般无需手动填写**。如果你需要手动指定，可在 Multica Web 控制台的工作区设置中查看 UUID。
+插件会自动获取工作区 ID，**一般无需手动填写**。如果你需要手动指定，可在 Multica Web 控制台的工作区设置中查看 UUID。
 
 ## 指令
 
