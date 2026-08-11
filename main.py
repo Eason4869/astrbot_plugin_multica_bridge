@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from astrbot import logger
-from astrbot.api.event import filter, AstrMessageEvent, MessageChain
+from astrbot.api.event import AstrMessageEvent, MessageChain
 from astrbot.api.star import Context, Star
 from astrbot.core.message.components import Plain
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
@@ -52,7 +52,30 @@ class Main(WebApiMixin, Star):
         except Exception as e:
             logger.warning("[multica_bridge] Web API 注册失败: %s", e)
 
-        # 命令通过 @filter.command 装饰器注册，无需手动 register_event_listener
+        # 注册命令监听（兼容 AstrBot v4.27.2+，使用 StarHandler 体系）
+        try:
+            from astrbot.core.star.star_handler import (
+                EventType,
+                StarHandlerMetadata,
+                star_handlers_registry,
+            )
+            from astrbot.core.star.filter.command import CommandFilter
+
+            handler_md = StarHandlerMetadata(
+                event_type=EventType.AdapterMessageEvent,
+                handler_full_name=f"{self._on_command.__module__}_{self._on_command.__name__}",
+                handler_name="_on_command",
+                handler_module_path=self._on_command.__module__,
+                handler=self._on_command,
+                event_filters=[],
+                desc="Multica 桥接指令处理",
+            )
+            handler_md.event_filters.append(
+                CommandFilter(command_name="multica", handler_md=handler_md)
+            )
+            star_handlers_registry.append(handler_md)
+        except Exception as e:
+            logger.warning("[multica_bridge] 命令监听注册失败: %s", e)
 
     # ── 命令处理 ──
 
@@ -71,14 +94,18 @@ class Main(WebApiMixin, Star):
     def _is_group_chat(event: AstrMessageEvent) -> bool:
         return not event.is_private_chat()
 
-    @filter.command("multica")
     async def _on_command(self, event: AstrMessageEvent) -> None:
         """处理 /multica 开头的命令。
 
-        使用 @filter.command 装饰器注册，确保在 LLM 之前拦截消息。
+        通过 StarHandlerMetadata + CommandFilter 注册，确保在 LLM 之前拦截消息。
         """
         try:
             text = (event.message_str or "").strip()
+
+            # CommandFilter 模式下 AstrBot 已剥离 /multica 前缀，
+            # 兼容直接调用时保留前缀的旧路径
+            if text.startswith("/multica"):
+                text = text[len("/multica"):].strip()
 
             # 检查黑/白名单
             from .multica_client import check_chat_allowed
@@ -92,9 +119,8 @@ class Main(WebApiMixin, Star):
                 )
                 return
 
-            # 解析子命令
-            parts = text.split(maxsplit=1)
-            sub = parts[1].strip() if len(parts) > 1 else "help"
+            # 解析子命令（text 已去除前缀，空文本 = help）
+            sub = text.split(maxsplit=1)[0].strip() if text else "help"
 
             if sub in ("help", "帮助"):
                 await self._cmd_help(event)

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1] - 2026-08-11
+
+### Fixed
+
+- `/multica` 指令修复：将命令注册从废弃的 `register_event_listener` 迁移到 `star_handlers_registry` + `StarHandlerMetadata` + `CommandFilter`，兼容 AstrBot v4.27.2+
+- `_on_command` 文本解析适配 CommandFilter 模式（前缀已被剥离），同时兼容旧路径
+
 ## [0.2.0] - 2026-08-11
 
 ### Added
