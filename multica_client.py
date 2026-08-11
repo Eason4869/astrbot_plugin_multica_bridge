@@ -160,6 +160,99 @@ class MulticaClient:
                 "请检查 api_url 和 token 是否正确，或手动填写 workspace_id。"
             )
 
+    async def create_issue(
+        self,
+        *,
+        title: str,
+        description: str = "",
+        priority: str = "",
+        status: str = "",
+        assignee_id: str = "",
+        project_id: str = "",
+        parent_id: str = "",
+        due_date: str = "",
+        labels: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """通过 Multica HTTP API 创建 Issue。
+
+        直接调用 ``POST /api/issues``，不依赖本机是否安装 ``multica`` CLI、
+        也不依赖 CLI 是否加入 PATH —— 规避“本机未安装 multica”这类误报。
+        """
+        if not self._enabled:
+            return {"ok": False, "message": "Multica 桥接未启用"}
+        if not self._api_url or not self._token:
+            return {"ok": False, "message": "API 地址或 Token 未配置"}
+        if not title or not title.strip():
+            return {"ok": False, "message": "缺少 Issue 标题"}
+
+        # 自动发现 workspace_id
+        try:
+            await self._ensure_workspace_id()
+        except RuntimeError as e:
+            return {"ok": False, "message": str(e)}
+
+        payload: dict[str, Any] = {
+            "title": title.strip(),
+            "workspace_id": self._workspace_id,
+        }
+        if description:
+            payload["description"] = description
+        if priority:
+            payload["priority"] = priority
+        if status:
+            payload["status"] = status
+        if assignee_id:
+            payload["assignee_id"] = assignee_id
+        if project_id:
+            payload["project_id"] = project_id
+        elif self._project_id:
+            payload["project_id"] = self._project_id
+        if parent_id:
+            payload["parent_issue_id"] = parent_id
+        if due_date:
+            payload["due_date"] = due_date
+        if labels:
+            payload["labels"] = list(labels)
+
+        import aiohttp
+
+        try:
+            url = urljoin(self._api_url + "/", "api/issues")
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url,
+                    headers=self._headers(),
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as resp:
+                    if resp.status in (200, 201):
+                        data = await resp.json()
+                        ident = (
+                            data.get("identifier")
+                            or data.get("id")
+                            or "（未返回编号）"
+                        )
+                        return {
+                            "ok": True,
+                            "message": f"已创建 Issue {ident}",
+                            "issue": data,
+                        }
+                    if resp.status == 401:
+                        return {
+                            "ok": False,
+                            "message": "Token 无效，请在 Multica 控制台重新生成",
+                        }
+                    body = await resp.text()
+                    return {
+                        "ok": False,
+                        "message": f"HTTP {resp.status}: {body[:300]}",
+                    }
+        except Exception as e:
+            return {
+                "ok": False,
+                "message": f"创建失败：{type(e).__name__}: {e}",
+            }
+
     async def sync_data(self, payload: dict[str, Any]) -> dict[str, Any]:
         """同步数据到 Multica。"""
         if not self._enabled:

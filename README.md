@@ -216,6 +216,11 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 | `/multica help` | 显示帮助信息 |
 | `/multica status` | 检查 Multica 连接状态 |
 | `/multica sync` | 手动触发一次数据同步 |
+| `/multica issue create <标题> [--desc 描述]` | 通过 API 新建 Issue（不依赖本机 CLI） |
+
+> 提示：`/multica issue create` 直接调用 Multica HTTP API 创建 Issue，
+> 不依赖本机是否安装 `multica` CLI、也不要求 CLI 加入 PATH，
+> 可避免“本机未安装 multica”这类误报。
 
 指令受会话过滤配置（黑白名单）控制。
 
