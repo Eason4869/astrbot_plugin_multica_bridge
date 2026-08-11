@@ -120,7 +120,7 @@ multica issue list --full-id
 |`--output json`|输出结构化 JSON，`id` 字段天然为完整 UUID|脚本处理、自动化、`jq` 解析|
 |`--full-id`|表格模式下展开 UUID 列为完整值|人眼查看、复制粘贴|
 
-\---
+---
 
 **2. Multica CLI（本地终端）**
 
@@ -172,7 +172,7 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 * 可批量筛选（按状态、负责人、优先级等）
 * 可集成到自动化工作流
 
-\---
+---
 
 ## 三、快速对照
 
