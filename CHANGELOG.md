@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.5.0] - 2026-08-12
+
+### Added
+
+- 新增 `/multica workspace list` 指令：列出当前 Token 可访问的所有工作区（名称、slug、id）
+- 新增 `/multica workspace select <id|slug>` 指令：切换当前工作区，通过 `save_plugin_config`
+  原子写入插件自有 `config.json` 的 `workspace_id` 字段，重启后仍生效
+- 新增 `/multica workspace create <名称> [--slug slug] [--desc 描述]` 指令：
+  调用 `POST /api/workspaces` 创建工作区，slug 缺省时按名称自动生成（小写字母/数字/连字符）
+- `MulticaClient` 新增 `list_workspaces()`、`create_workspace()`，并重构 `test_connection()`
+  复用列表接口；`_ensure_workspace_id()` 改为按已配置的 workspace_id/slug 精确匹配当前工作区
+- `/multica help` 与 WebUI「指令说明」卡片同步新增 workspace 命令
+- 新增 `/multica inbox [数量] [open|done]` 指令：在聊天中查看工作区收件箱（最近 Issue 及进展）
+  - 默认显示最近 10 条，按更新时间倒序，每条含状态图标、编号、标题、优先级、指派人
+  - `open` 仅显示未完成（非 done/cancelled）；`done` 仅显示已完成/已取消
+  - 数量参数生效（1-50，防止刷屏）
+- `MulticaClient.list_issues()`：调用 `GET /api/issues`，query 参数传 workspace_id（与 `create_issue` 一致），支持 status/limit/sort/direction 过滤
+- `MulticaClient.resolve_assignee_names()`：best-effort 解析指派人名称（智能体/团队/成员），端点失败自动降级，不影响主流程
+- `/multica help`、README、WebUI 指令说明同步新增 inbox 命令
+- 新增 `/multica project list` 指令：列出当前工作区下的所有项目（标题、id，当前项目带 ✓ 标记）
+- 新增 `/multica project select <id>` 指令：切换当前项目，通过 `save_plugin_config`
+  原子写入插件自有 `config.json` 的 `project_id` 字段，重启后仍生效；
+  `create_issue` 已支持 `project_id` 传递，切换后新建 Issue 默认进入所选项目
+- 新增 `/multica project create <标题> [--desc 描述]` 指令：调用 `POST /api/projects`
+  创建项目（query 参数传 workspace_id，title 必填、description 可选）
+- `MulticaClient` 新增 `list_projects()`、`create_project()`、`find_project()`：
+  列表与创建均复用 `_ensure_workspace_id()` 解析工作区，query 参数传 workspace_id（与 `create_issue` 一致）
+- `/multica help`、README、WebUI 指令说明同步新增 project 命令
+
+### Why
+
+- 用户需要在不打开 Web 控制台的情况下查看/切换多个工作区，并直接在聊天中创建新工作区；
+  工作区选择仅持久化配置，无独立 API 调用。
+- 用户希望在聊天中随时掌握 Multica Issue 的状态与进展，无需打开 Web 控制台。
+- API 不支持按 `updated_at` 排序（实测报错），故拉取较新窗口后在本地完成排序。
+- 用户希望为新建 Issue 指定所属项目：选择项目仅持久化配置（`project_id`），
+  `create_issue` 已支持该字段，无需新增额外参数。
+
 ## [0.4.0] - 2026-08-11
 
 ### Removed
