@@ -8,6 +8,12 @@
 - `MulticaClient.create_issue()`：调用 `POST /api/issues`，字段与 CLI 对齐（title/description/priority/status/assignee_id/project_id/parent_issue_id/due_date/labels）
 - WebUI 设置页新增「指令说明」卡片，列出全部 `/multica` 指令用法
 
+### Fixed
+
+- 修复 `POST /api/issues` 返回 `HTTP 400: workspace_id or workspace_slug is required`：
+  Multica API 通过 **query 参数**识别工作区（`?workspace_id=...`），body 中的 `workspace_id` 会被忽略。
+  `create_issue()` 改为将工作区放入 URL query，并在无法确定工作区时给出明确中文报错。
+
 ### Why
 
 - 用户在 QQ 要求新建 Issue 时，AstrBot 的 LLM agent 通过 `astrbot_execute_shell` 调用 `multica` CLI，

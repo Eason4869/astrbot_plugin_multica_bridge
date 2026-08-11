@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin
 
 from .config import CONFIG_DEFAULTS
 
@@ -190,10 +190,14 @@ class MulticaClient:
             await self._ensure_workspace_id()
         except RuntimeError as e:
             return {"ok": False, "message": str(e)}
+        if not self._workspace_id:
+            return {
+                "ok": False,
+                "message": "无法确定工作区：请检查 api_url/token，或手动填写 workspace_id",
+            }
 
         payload: dict[str, Any] = {
             "title": title.strip(),
-            "workspace_id": self._workspace_id,
         }
         if description:
             payload["description"] = description
@@ -217,7 +221,12 @@ class MulticaClient:
         import aiohttp
 
         try:
-            url = urljoin(self._api_url + "/", "api/issues")
+            # 注意：Multica API 通过 query 参数识别工作区，
+            # body 中的 workspace_id 会被忽略（实测返回 400 提示缺失）
+            url = urljoin(
+                self._api_url + "/",
+                "api/issues?" + urlencode({"workspace_id": self._workspace_id}),
+            )
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     url,

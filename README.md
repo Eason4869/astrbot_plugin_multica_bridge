@@ -139,7 +139,7 @@ multica issue list --full-id
 
 ```bash
 # 安装 Multica CLI（具体安装方式参考官方文档）
-# \\\[待确认：当前 CLI 安装方式]
+# 本机安装路径：C:\Users\eason\.multica\bin\multica.exe（已加入用户 PATH）
 
 # 登录
 multica login
