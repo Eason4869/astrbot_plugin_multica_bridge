@@ -1,6 +1,6 @@
 """Multica 桥接插件主入口。
 
-将 AstrBot 接入 Multica 平台：连接测试、通过聊天指令创建 Issue、管理工作区。
+将 AstrBot 接入 Multica 平台：连接测试、通过聊天指令创建 Issue、管理工作区与项目。
 所有配置通过 WebUI 设置页管理，修改后自动保存热生效。
 """
 
@@ -156,6 +156,8 @@ class Main(WebApiMixin, Star):
                 await self._cmd_issue(event, args)
             elif sub in ("workspace", "工作区"):
                 await self._cmd_workspace(event, args)
+            elif sub in ("project", "项目"):
+                await self._cmd_project(event, args)
             elif sub in ("inbox", "收件箱"):
                 await self._cmd_inbox(event, args)
             else:
@@ -174,6 +176,9 @@ class Main(WebApiMixin, Star):
             "/multica workspace list — 列出可访问的工作区\n"
             "/multica workspace select <id|slug> — 切换当前工作区（持久化）\n"
             "/multica workspace create <名称> [--slug slug] [--desc 描述] — 创建工作区\n"
+            "/multica project list — 列出当前工作区的项目\n"
+            "/multica project select <id> — 切换当前项目（持久化）\n"
+            "/multica project create <标题> [--desc 描述] — 创建项目\n"
             "/multica inbox [数量] [open|done] — 查看收件箱（最近 Issue 及进展）"
         )
         await self._reply(event, help_text)
@@ -372,6 +377,123 @@ class Main(WebApiMixin, Star):
             description=desc,
             context=context,
         )
+        if result["ok"]:
+            await self._reply(event, f"✅ {result['message']}")
+        else:
+            await self._reply(event, f"❌ 创建失败：{result['message']}")
+
+    async def _cmd_project(self, event: AstrMessageEvent, args: str) -> None:
+        """处理 /multica project 子命令（list / select / create）。"""
+        parts = args.split()
+        action = parts[0] if parts else ""
+        rest = args[len(action):].strip() if action else ""
+
+        if action in ("list", "列表"):
+            await self._cmd_project_list(event)
+        elif action in ("select", "选择", "切换"):
+            await self._cmd_project_select(event, rest)
+        elif action in ("create", "新建"):
+            await self._cmd_project_create(event, rest)
+        else:
+            await self._reply(
+                event,
+                "用法：\n"
+                "/multica project list\n"
+                "/multica project select <id>\n"
+                "/multica project create <标题> [--desc 描述]",
+            )
+
+    async def _cmd_project_list(self, event: AstrMessageEvent) -> None:
+        """列出当前工作区下的所有项目。"""
+        from .multica_client import MulticaClient
+
+        client = MulticaClient(self.cfg)
+        result = await client.list_projects()
+        if not result["ok"]:
+            await self._reply(event, f"❌ 获取项目列表失败：{result['message']}")
+            return
+
+        projects = result.get("projects") or []
+        current = (self.cfg.get("project_id") or "").strip().lower()
+        lines = [f"共 {len(projects)} 个项目："]
+        for proj in projects:
+            if not isinstance(proj, dict):
+                continue
+            title = proj.get("title") or "（未命名）"
+            pid = proj.get("id") or ""
+            marker = " ✓" if pid and str(pid).lower() == current else ""
+            lines.append(f"• {title}{marker}\n  {pid}")
+        lines.append("发送 /multica project select <id> 可切换当前项目")
+        await self._reply(event, "\n".join(lines))
+
+    async def _cmd_project_select(self, event: AstrMessageEvent, target: str) -> None:
+        """切换当前项目并持久化到插件自有 config.json。"""
+        from .multica_client import MulticaClient
+
+        target = (target or "").strip()
+        if not target:
+            await self._reply(
+                event,
+                "用法：/multica project select <id>\n"
+                "示例：/multica project select e8a339ad-32ec-49ac-bbd7-0c8d7e1b1466",
+            )
+            return
+
+        client = MulticaClient(self.cfg)
+        result = await client.list_projects()
+        if not result["ok"]:
+            await self._reply(event, f"❌ 获取项目列表失败：{result['message']}")
+            return
+
+        proj = client.find_project(target, result.get("projects") or [])
+        if proj is None:
+            await self._reply(
+                event,
+                f"❌ 未找到项目 {target}。可用列表请查看 /multica project list",
+            )
+            return
+
+        pid = str(proj.get("id") or "").strip()
+        title = proj.get("title") or "（未命名）"
+        if not pid:
+            await self._reply(event, "❌ 目标项目缺少 id，无法切换")
+            return
+
+        self.cfg["project_id"] = pid
+        self._save_cfg()
+        await self._reply(
+            event,
+            f"✅ 已切换到项目 {title}（{pid}）\n"
+            "该选择已持久化，重启后仍然生效。",
+        )
+
+    async def _cmd_project_create(self, event: AstrMessageEvent, args: str) -> None:
+        """创建项目（title 必填，--desc 为可选描述）。"""
+        from .multica_client import MulticaClient
+
+        parts = (args or "").split()
+        if not parts:
+            await self._reply(
+                event,
+                "用法：/multica project create <标题> [--desc 描述]\n"
+                "示例：/multica project create 前端重构 --desc 计划中的前端重构项目",
+            )
+            return
+
+        desc = ""
+        if "--desc" in parts:
+            idx = parts.index("--desc")
+            title = " ".join(parts[:idx]).strip()
+            desc = " ".join(parts[idx + 1:]).strip()
+        else:
+            title = " ".join(parts).strip()
+
+        if not title:
+            await self._reply(event, "❌ 项目标题不能为空")
+            return
+
+        client = MulticaClient(self.cfg)
+        result = await client.create_project(title=title, description=desc)
         if result["ok"]:
             await self._reply(event, f"✅ {result['message']}")
         else:

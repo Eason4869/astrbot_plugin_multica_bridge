@@ -379,6 +379,169 @@ class MulticaClient:
                 "message": f"创建工作区失败：{type(e).__name__}: {e}",
             }
 
+    async def list_projects(self) -> dict[str, Any]:
+        """列出当前工作区下的所有项目。
+
+        直接调用 ``GET /api/projects``，query 参数传 workspace_id（与 create_issue 一致）。
+        返回 ``{"ok": True, "projects": [{id, title, ...}, ...]}``
+        或 ``{"ok": False, "message": "..."}``。
+        """
+        if not self._enabled:
+            return {"ok": False, "message": "Multica 桥接未启用", "projects": []}
+        if not self._api_url or not self._token:
+            return {
+                "ok": False,
+                "message": "Multica API 地址或 Token 未配置",
+                "projects": [],
+            }
+
+        try:
+            await self._ensure_workspace_id()
+        except RuntimeError as e:
+            return {"ok": False, "message": str(e), "projects": []}
+        if not self._workspace_id:
+            return {
+                "ok": False,
+                "message": "无法确定工作区：请检查 api_url/token，或手动填写 workspace_id",
+                "projects": [],
+            }
+
+        import aiohttp
+
+        try:
+            url = urljoin(
+                self._api_url + "/",
+                "api/projects?" + urlencode({"workspace_id": self._workspace_id}),
+            )
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    url,
+                    headers=self._headers(),
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if isinstance(data, dict):
+                            projects = data.get("projects") or []
+                        elif isinstance(data, list):
+                            projects = data
+                        else:
+                            projects = []
+                        return {"ok": True, "projects": list(projects)}
+                    if resp.status == 401:
+                        return {
+                            "ok": False,
+                            "message": "Token 无效，请在 Multica 控制台重新生成",
+                            "projects": [],
+                        }
+                    body = await resp.text()
+                    return {
+                        "ok": False,
+                        "message": f"HTTP {resp.status}: {body[:200]}",
+                        "projects": [],
+                    }
+        except Exception as e:
+            return {
+                "ok": False,
+                "message": f"获取项目列表失败：{type(e).__name__}: {e}",
+                "projects": [],
+            }
+
+    def find_project(
+        self, value: str, projects: list[dict[str, Any]]
+    ) -> dict[str, Any] | None:
+        """按 id（支持完整 UUID 或前缀）查找项目。"""
+        target = (value or "").strip().lower()
+        if not target:
+            return None
+        for proj in projects:
+            if not isinstance(proj, dict):
+                continue
+            pid = str(proj.get("id") or "").strip().lower()
+            if target == pid or (len(target) >= 8 and pid.startswith(target)):
+                return proj
+        return None
+
+    async def create_project(
+        self,
+        *,
+        title: str,
+        description: str = "",
+        icon: str = "",
+        status: str = "",
+        lead: str = "",
+    ) -> dict[str, Any]:
+        """通过 Multica HTTP API 创建项目。
+
+        ``POST /api/projects``，query 参数传 workspace_id（与 create_issue 一致），
+        请求体字段与 CLI 对齐：title 必填，description/icon/status/lead 可选。
+        """
+        if not self._enabled:
+            return {"ok": False, "message": "Multica 桥接未启用"}
+        if not self._api_url or not self._token:
+            return {"ok": False, "message": "API 地址或 Token 未配置"}
+        if not title or not title.strip():
+            return {"ok": False, "message": "缺少项目标题"}
+
+        try:
+            await self._ensure_workspace_id()
+        except RuntimeError as e:
+            return {"ok": False, "message": str(e)}
+        if not self._workspace_id:
+            return {
+                "ok": False,
+                "message": "无法确定工作区：请检查 api_url/token，或手动填写 workspace_id",
+            }
+
+        payload: dict[str, Any] = {"title": title.strip()}
+        if description:
+            payload["description"] = description
+        if icon:
+            payload["icon"] = icon
+        if status:
+            payload["status"] = status
+        if lead:
+            payload["lead"] = lead
+
+        import aiohttp
+
+        try:
+            url = urljoin(
+                self._api_url + "/",
+                "api/projects?" + urlencode({"workspace_id": self._workspace_id}),
+            )
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url,
+                    headers=self._headers(),
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as resp:
+                    if resp.status in (200, 201):
+                        data = await resp.json()
+                        ptitle = data.get("title") or title
+                        pid = data.get("id") or "（未返回 id）"
+                        return {
+                            "ok": True,
+                            "message": f"已创建项目 {ptitle}（{pid}）",
+                            "project": data,
+                        }
+                    if resp.status == 401:
+                        return {
+                            "ok": False,
+                            "message": "Token 无效，请在 Multica 控制台重新生成",
+                        }
+                    body = await resp.text()
+                    return {
+                        "ok": False,
+                        "message": f"HTTP {resp.status}: {body[:300]}",
+                    }
+        except Exception as e:
+            return {
+                "ok": False,
+                "message": f"创建项目失败：{type(e).__name__}: {e}",
+            }
+
     async def list_issues(
         self,
         *,
