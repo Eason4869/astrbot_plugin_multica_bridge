@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from astrbot import logger
-from astrbot.api.event import AstrMessageEvent, MessageChain
+from astrbot.api.event import filter, AstrMessageEvent, MessageChain
 from astrbot.api.star import Context, Star
 from astrbot.core.message.components import Plain
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
@@ -52,15 +52,7 @@ class Main(WebApiMixin, Star):
         except Exception as e:
             logger.warning("[multica_bridge] Web API 注册失败: %s", e)
 
-        # 注册命令监听
-        try:
-            self.context.register_event_listener(
-                "on_message",
-                self._on_command,
-                "multica_bridge",
-            )
-        except Exception as e:
-            logger.warning("[multica_bridge] 命令监听注册失败: %s", e)
+        # 命令通过 @filter.command 装饰器注册，无需手动 register_event_listener
 
     # ── 命令处理 ──
 
@@ -79,12 +71,14 @@ class Main(WebApiMixin, Star):
     def _is_group_chat(event: AstrMessageEvent) -> bool:
         return not event.is_private_chat()
 
+    @filter.command("multica")
     async def _on_command(self, event: AstrMessageEvent) -> None:
-        """监听所有消息，处理 /multica 开头的命令。"""
+        """处理 /multica 开头的命令。
+
+        使用 @filter.command 装饰器注册，确保在 LLM 之前拦截消息。
+        """
         try:
             text = (event.message_str or "").strip()
-            if not text.startswith("/multica"):
-                return
 
             # 检查黑/白名单
             from .multica_client import check_chat_allowed
@@ -110,6 +104,8 @@ class Main(WebApiMixin, Star):
                 await self._cmd_sync(event)
             else:
                 await self._reply(event, f"未知子命令: {sub}\n发送 /multica help 查看帮助")
+
+            event.stop_event()  # 阻止 LLM 继续处理此消息
         except Exception as e:
             logger.error("[multica_bridge] 命令处理异常: %s", e)
 
