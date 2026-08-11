@@ -76,33 +76,120 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 ### 3. 获取 UUID
 
-在Multica的Web界面输入指令来显示完整 UUID：
 
-1.查看工作区 UUID：
 
-# 当前工作区的完整信息（含 UUID）
+**1. Multica Web 界面（浏览器）**
+
+在 Web 界面的聊天输入框中直接输入命令即可，无需额外安装任何工具。
+
+### 获取工作区 UUID
+
+```bash
+# 查看当前工作区完整信息（含 UUID、名称、描述、仓库等）
 multica workspace get --output json
 
-# 所有工作区列表（默认 table 格式，UUID 截断显示）
+# 查看所有工作区列表（表格形式，UUID 默认截断）
 multica workspace list
 
-# 所有工作区 + 完整 UUID
+# 查看所有工作区列表 + 完整 UUID
 multica workspace list --full-id
+```
 
-# JSON 格式，直接拿 id 字段
-multica workspace list --output json
+JSON 输出中的 `id` 字段即为完整 UUID。
 
+### 获取 Issue UUID
 
-2.查看 Issue UUID：
-
-# 单个 issue 详情
+```bash
+# 查看单个 Issue 详情（含完整 UUID）
 multica issue get <issue-id> --output json
+# 示例：multica issue get WS-34 --output json
 
-# issue 列表 + 完整 UUID
+# 查看所有 Issue 列表（表格形式，UUID 默认截断）
+multica issue list
+
+# 查看所有 Issue 列表 + 完整 UUID
 multica issue list --full-id
+```
 
-# JSON 格式
+`<issue-id>` 可以是 Issue Key（如 `WS-34`）、完整 UUID，或 UUID 前缀（≥4 位十六进制）。
+
+### 参数说明
+
+|参数|作用|适用场景|
+|-|-|-|
+|`--output json`|输出结构化 JSON，`id` 字段天然为完整 UUID|脚本处理、自动化、`jq` 解析|
+|`--full-id`|表格模式下展开 UUID 列为完整值|人眼查看、复制粘贴|
+
+\---
+
+**2. Multica CLI（本地终端）**
+
+适用于 Windows / macOS / Linux 本地终端，需先安装并登录。
+
+### 安装与登录
+
+```bash
+# 安装 Multica CLI（具体安装方式参考官方文档）
+# \\\[待确认：当前 CLI 安装方式]
+
+# 登录
+multica login
+```
+
+### 获取工作区 UUID
+
+```bash
+# 查看当前工作区完整信息
+multica workspace get --output json
+
+# 指定工作区（支持 UUID / Slug / Short ID）
+multica workspace get <workspace-id> --output json
+# 示例：multica workspace get d79e9419 --output json
+# 示例：multica workspace get eason-service --output json
+
+# 列出所有工作区
+multica workspace list --output json
+multica workspace list --full-id
+```
+
+### 获取 Issue UUID
+
+```bash
+# 查看单个 Issue
+multica issue get <issue-id> --output json
+# 示例：multica issue get WS-34 --output json
+
+# 查询并筛选 Issue
 multica issue list --output json
+multica issue list --full-id
+multica issue list --status in\\\_review --full-id
+multica issue list --assignee "agent:AstrBot-运维" --output json
+```
+
+### CLI 特有优势
+
+* 支持管道和脚本：`multica issue list --output json | jq '.\\\[].id'`
+* 可批量筛选（按状态、负责人、优先级等）
+* 可集成到自动化工作流
+
+\---
+
+## 三、快速对照
+
+|操作|Web 界面|CLI 本地终端|
+|-|-|-|
+|当前工作区 UUID|`multica workspace get --output json`|同上|
+|所有工作区 UUID|`multica workspace list --full-id`|同上|
+|单个 Issue UUID|`multica issue get <id> --output json`|同上|
+|所有 Issue UUID|`multica issue list --full-id`|同上|
+|管道/脚本处理|不支持|支持 `jq` 等|
+|登录方式|浏览器已登录|需 `multica login`|
+
+> \\\*\\\*核心命令完全一致\\\*\\\*——Web 界面和 CLI 使用相同的 `multica` 命令语法，区别仅在于运行环境和后续处理能力。
+
+
+
+
 
 
 > 更多细节请参考 Multica 官方文档：
