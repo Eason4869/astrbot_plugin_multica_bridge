@@ -9,8 +9,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from astrbot import logger
-from astrbot.api.event import MessageEvent
+from astrbot.api.event import AstrMessageEvent, MessageChain
 from astrbot.api.star import Context, Star
+from astrbot.core.message.components import Plain
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .web_api import WebApiMixin
@@ -64,22 +65,24 @@ class Main(WebApiMixin, Star):
     # ── 命令处理 ──
 
     @staticmethod
-    def _get_chat_id(event: MessageEvent) -> str:
+    def _get_chat_id(event: AstrMessageEvent) -> str:
         """从事件中提取会话 ID（群号或用户号）。"""
-        if hasattr(event, "group_id") and event.group_id:
-            return str(event.group_id)
-        if hasattr(event, "user_id"):
-            return str(event.user_id)
+        group_id = event.get_group_id()
+        if group_id:
+            return group_id
+        sender_id = event.get_sender_id()
+        if sender_id:
+            return sender_id
         return ""
 
     @staticmethod
-    def _is_group_chat(event: MessageEvent) -> bool:
-        return bool(hasattr(event, "group_id") and getattr(event, "group_id", None))
+    def _is_group_chat(event: AstrMessageEvent) -> bool:
+        return not event.is_private_chat()
 
-    async def _on_command(self, event: MessageEvent) -> None:
+    async def _on_command(self, event: AstrMessageEvent) -> None:
         """监听所有消息，处理 /multica 开头的命令。"""
         try:
-            text = (event.message or "").strip()
+            text = (event.message_str or "").strip()
             if not text.startswith("/multica"):
                 return
 
@@ -110,7 +113,7 @@ class Main(WebApiMixin, Star):
         except Exception as e:
             logger.error("[multica_bridge] 命令处理异常: %s", e)
 
-    async def _cmd_help(self, event: MessageEvent) -> None:
+    async def _cmd_help(self, event: AstrMessageEvent) -> None:
         help_text = (
             "Multica 桥接插件命令：\n"
             "/multica help  — 显示此帮助\n"
@@ -119,7 +122,7 @@ class Main(WebApiMixin, Star):
         )
         await self._reply(event, help_text)
 
-    async def _cmd_status(self, event: MessageEvent) -> None:
+    async def _cmd_status(self, event: AstrMessageEvent) -> None:
         from .multica_client import MulticaClient
 
         client = MulticaClient(self.cfg)
@@ -130,7 +133,7 @@ class Main(WebApiMixin, Star):
         else:
             await self._reply(event, f"Multica 连接失败: {result['message']}")
 
-    async def _cmd_sync(self, event: MessageEvent) -> None:
+    async def _cmd_sync(self, event: AstrMessageEvent) -> None:
         from .multica_client import MulticaClient
 
         client = MulticaClient(self.cfg)
@@ -141,13 +144,9 @@ class Main(WebApiMixin, Star):
             await self._reply(event, f"同步失败: {result['message']}")
 
     @staticmethod
-    async def _reply(event: MessageEvent, text: str) -> None:
+    async def _reply(event: AstrMessageEvent, text: str) -> None:
         """向消息来源回复。"""
         try:
-            # AstrBot 标准回复方式
-            if hasattr(event, "reply"):
-                await event.reply(text)
-            elif hasattr(event, "send"):
-                await event.send(text)
+            await event.send(MessageChain([Plain(text)]))
         except Exception as e:
             logger.warning("[multica_bridge] 回复消息失败: %s", e)
