@@ -216,6 +216,48 @@
       </div>
     </div>
 
+    <!-- Chat Filter Settings -->
+    <div class="card">
+      <h2>会话过滤</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        控制插件在哪些群聊/私聊中生效，支持黑名单和白名单两种模式。
+      </p>
+      <div class="field" style="flex-direction:column;align-items:flex-start;">
+        <div style="width:100%;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div class="field-label">群聊过滤模式</div>
+            <div class="field-hint">黑名单：排除指定群 / 白名单：仅指定群可用 / 关闭：不限制</div>
+          </div>
+          <select id="field-group_chat_mode" class="field-control" style="width:120px;">
+            <option value="blacklist">黑名单</option>
+            <option value="whitelist">白名单</option>
+            <option value="disabled">关闭</option>
+          </select>
+        </div>
+        <div style="margin-top:10px;width:100%;">
+          <div class="field-hint" style="margin-bottom:4px;">群聊 ID 列表（每行一个）</div>
+          <textarea id="field-group_chat_list" rows="3" style="width:100%;background:var(--input-bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;outline:none;resize:vertical;font-family:inherit;" placeholder="123456789&#10;987654321"></textarea>
+        </div>
+      </div>
+      <div class="field" style="flex-direction:column;align-items:flex-start;">
+        <div style="width:100%;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div class="field-label">私聊过滤模式</div>
+            <div class="field-hint">黑名单：排除指定用户 / 白名单：仅指定用户可用 / 关闭：不限制</div>
+          </div>
+          <select id="field-private_chat_mode" class="field-control" style="width:120px;">
+            <option value="blacklist">黑名单</option>
+            <option value="whitelist">白名单</option>
+            <option value="disabled">关闭</option>
+          </select>
+        </div>
+        <div style="margin-top:10px;width:100%;">
+          <div class="field-hint" style="margin-bottom:4px;">用户 ID 列表（每行一个）</div>
+          <textarea id="field-private_chat_list" rows="3" style="width:100%;background:var(--input-bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;outline:none;resize:vertical;font-family:inherit;" placeholder="123456789&#10;987654321"></textarea>
+        </div>
+      </div>
+    </div>
+
     <!-- Actions -->
     <div class="card">
       <h2>连接测试</h2>
@@ -234,13 +276,16 @@
   <script>
     (function () {
       const PLUGIN_NAME = 'astrbot_plugin_multica_bridge';
-      const FIELDS = ['enabled', 'api_url', 'token', 'workspace_id', 'project_id', 'sync_reports', 'sync_interval_minutes'];
+      const FIELDS = ['enabled', 'api_url', 'token', 'workspace_id', 'project_id', 'sync_reports', 'sync_interval_minutes', 'group_chat_mode', 'group_chat_list', 'private_chat_mode', 'private_chat_list'];
       const BOOLS = new Set(['enabled', 'sync_reports']);
+      const LISTS = new Set(['group_chat_list', 'private_chat_list']);
+      const SELECTS = new Set(['group_chat_mode', 'private_chat_mode']);
 
       let cfg = {};
       let bridgeReady = false;
       let bridge = null;
       let saveTimer = null;
+      let tokenChanged = false;  // 追踪 token 是否被用户手动修改
 
       // ── Bridge ──
       function getBridge() {
@@ -301,6 +346,10 @@
       }
 
       // ── Load Config ──
+      function listToText(val) {
+        if (Array.isArray(val)) return val.join('\n');
+        return '';
+      }
       async function loadConfig() {
         try {
           const data = await apiGet('config');
@@ -310,6 +359,10 @@
             if (!el) return;
             if (BOOLS.has(k)) {
               el.checked = !!cfg[k];
+            } else if (LISTS.has(k)) {
+              el.value = listToText(cfg[k]);
+            } else if (SELECTS.has(k)) {
+              el.value = cfg[k] || 'blacklist';
             } else {
               el.value = cfg[k] != null ? String(cfg[k]) : '';
             }
@@ -327,7 +380,15 @@
 
       async function doSave() {
         try {
-          await apiPost('actions/save_config', cfg);
+          // 若 token 未被用户修改过，不将其包含在保存请求中，防止覆盖真实 token
+          var payload = {};
+          for (var key in cfg) {
+            if (cfg.hasOwnProperty(key)) {
+              if (key === 'token' && !tokenChanged) continue;
+              payload[key] = cfg[key];
+            }
+          }
+          await apiPost('actions/save_config', payload);
           showToast('已保存', 'toast-ok');
         } catch (e) {
           showToast('保存失败：' + e.message, 'toast-err');
@@ -352,8 +413,18 @@
             el.addEventListener('input', function () {
               setField(k, parseInt(el.value, 10) || 0);
             });
+          } else if (LISTS.has(k)) {
+            el.addEventListener('input', function () {
+              var lines = el.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+              setField(k, lines);
+            });
+          } else if (SELECTS.has(k)) {
+            el.addEventListener('change', function () {
+              setField(k, el.value);
+            });
           } else {
             el.addEventListener('input', function () {
+              if (k === 'token') tokenChanged = true;
               setField(k, el.value);
             });
           }

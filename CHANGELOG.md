@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0] - 2026-08-11
+
+### Added
+
+- 会话过滤配置：群聊/私聊的黑白名单模式切换，各自的黑白名单列表
+- `/multica` 系列命令：`help`、`status`、`sync`，支持在聊天中直接操作
+- 项目 logo（SVG）
+
+### Changed
+
+- README 大幅扩展：添加 Multica 文档链接、API 地址与 Token 获取教程、命令用法说明
+- WebUI 设置页新增会话过滤配置区域
+
+### Fixed
+
+- WebUI 保存时 token 被 GET 返回的脱敏值覆盖的问题（前后端双重防护）
+
 ## [0.1.0] - 2026-08-11
 
 ### Added

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4f46e5"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded square -->
+  <rect x="8" y="8" width="112" height="112" rx="24" ry="24" fill="url(#bg)"/>
+  <!-- Bridge arch: left pillar -->
+  <rect x="30" y="50" width="12" height="38" rx="3" fill="#fff" opacity="0.9"/>
+  <!-- Bridge arch: right pillar -->
+  <rect x="86" y="50" width="12" height="38" rx="3" fill="#fff" opacity="0.9"/>
+  <!-- Bridge deck -->
+  <path d="M 24 56 Q 64 30 104 56" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.95"/>
+  <!-- Connection nodes: left -->
+  <circle cx="36" cy="74" r="6" fill="#a78bfa"/>
+  <circle cx="36" cy="74" r="3" fill="#fff" opacity="0.6"/>
+  <!-- Connection nodes: right -->
+  <circle cx="92" cy="74" r="6" fill="#a78bfa"/>
+  <circle cx="92" cy="74" r="3" fill="#fff" opacity="0.6"/>
+  <!-- Arrows between nodes -->
+  <line x1="44" y1="74" x2="84" y2="74" stroke="#e0e7ff" stroke-width="2" stroke-dasharray="4 3" opacity="0.7"/>
+  <!-- Arrow head left -->
+  <polygon points="80,70 88,74 80,78" fill="#e0e7ff" opacity="0.7"/>
+  <!-- Arrow head right -->
+  <polygon points="48,70 40,74 48,78" fill="#e0e7ff" opacity="0.7"/>
+</svg>

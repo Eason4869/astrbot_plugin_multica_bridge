@@ -19,6 +19,12 @@ CONFIG_DEFAULTS: dict[str, Any] = {
     "project_id": "",
     "sync_reports": False,
     "sync_interval_minutes": 60,
+    # 群聊黑白名单
+    "group_chat_mode": "blacklist",  # "blacklist" | "whitelist" | "disabled"
+    "group_chat_list": [],
+    # 私聊黑白名单
+    "private_chat_mode": "blacklist",  # "blacklist" | "whitelist" | "disabled"
+    "private_chat_list": [],
 }
 
 

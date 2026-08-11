@@ -8,18 +8,12 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import urljoin
 
+from .config import CONFIG_DEFAULTS
+
 
 def get_multica_config(cfg: dict[str, Any] | None) -> dict[str, Any]:
     """从插件配置中提取 Multica 相关配置。"""
-    defaults = {
-        "enabled": True,
-        "api_url": "http://localhost:8080",
-        "token": "",
-        "workspace_id": "",
-        "project_id": "",
-        "sync_reports": False,
-        "sync_interval_minutes": 60,
-    }
+    defaults = dict(CONFIG_DEFAULTS)
     if not isinstance(cfg, dict):
         return defaults
     out = dict(defaults)
@@ -27,6 +21,32 @@ def get_multica_config(cfg: dict[str, Any] | None) -> dict[str, Any]:
         if k in cfg:
             out[k] = cfg[k]
     return out
+
+
+def check_chat_allowed(cfg: dict[str, Any] | None, chat_type: str, chat_id: str) -> bool:
+    """检查指定会话是否在黑/白名单配置中允许执行。
+
+    chat_type: "group" 或 "private"
+    chat_id: 群号或用户 QQ 号（字符串）
+    返回 True 表示允许，False 表示应跳过。
+    """
+    if not isinstance(cfg, dict):
+        return True
+    mode_key = f"{chat_type}_chat_mode"
+    list_key = f"{chat_type}_chat_list"
+    mode = str(cfg.get(mode_key, "disabled"))
+    id_list = cfg.get(list_key, [])
+    if not isinstance(id_list, (list, tuple)):
+        id_list = []
+    # 转换为字符串列表
+    id_set = {str(i).strip() for i in id_list if str(i).strip()}
+    chat_str = str(chat_id).strip()
+    if mode == "blacklist":
+        return chat_str not in id_set
+    if mode == "whitelist":
+        return chat_str in id_set
+    # disabled: 不限制
+    return True
 
 
 class MulticaClient:

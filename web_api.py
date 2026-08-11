@@ -104,6 +104,9 @@ class WebApiMixin:
             cur = dict(getattr(self, "cfg", None) or {})
             for k, v in body.items():
                 if k in CONFIG_DEFAULTS:
+                    # 跳过含掩码字符的 token 值，防止被 GET 返回的脱敏 token 覆盖
+                    if k == "token" and isinstance(v, str) and "****" in v:
+                        continue
                     cur[k] = coerce_to_default_type(v, CONFIG_DEFAULTS[k])
 
             data_dir = getattr(self, "_data_dir", None) or str(self.get_data_dir())
