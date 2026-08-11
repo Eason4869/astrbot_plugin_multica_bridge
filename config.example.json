@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "api_url": "http://localhost:8080",
+  "token": "",
+  "workspace_id": "",
+  "project_id": "",
+  "sync_reports": false,
+  "sync_interval_minutes": 60
+}

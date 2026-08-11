@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multica 桥接设置</title>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --card-bg: #fff;
+      --text: #333;
+      --text-muted: #888;
+      --border: #e0e0e0;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --danger: #dc2626;
+      --danger-hover: #b91c1c;
+      --input-bg: #fafafa;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .dark {
+      --bg: #1a1a2e;
+      --card-bg: #22223b;
+      --text: #e0e0e0;
+      --text-muted: #999;
+      --border: #333;
+      --input-bg: #2a2a40;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px 20px;
+      line-height: 1.6;
+      transition: background 0.2s, color 0.2s;
+    }
+    .container { max-width: 640px; margin: 0 auto; }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+    }
+    .field + .field { border-top: 1px solid var(--border); }
+    .field-label { font-size: 14px; }
+    .field-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .field-control {
+      flex-shrink: 0;
+      margin-left: 16px;
+    }
+    input[type="text"], input[type="number"], select {
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 13px;
+      width: 220px;
+      outline: none;
+      transition: border 0.15s;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    input[type="number"] { width: 100px; }
+
+    /* Toggle switch */
+    .switch { position: relative; display: inline-block; width: 42px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #ccc; border-radius: 24px;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: ""; position: absolute;
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background: #fff; border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    input:checked + .slider { background: var(--accent); }
+    input:checked + .slider::before { transform: translateX(18px); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; font-size: 13px; font-weight: 500;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--card-bg); color: var(--text);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-hover); color: #fff; }
+    .btn-danger { color: var(--danger); border-color: var(--danger); }
+    .btn-danger:hover { background: var(--danger); color: #fff; }
+    .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 10px 18px; border-radius: 8px;
+      font-size: 13px; z-index: 999;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      transition: opacity 0.3s;
+    }
+    .toast-ok  { background: #16a34a; color: #fff; }
+    .toast-err { background: #dc2626; color: #fff; }
+    .toast-info { background: var(--accent); color: #fff; }
+
+    .msg { font-size: 13px; color: var(--text-muted); white-space: pre-wrap; }
+    .status-dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; margin-right: 6px;
+    }
+    .status-ok { background: #16a34a; }
+    .status-err { background: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Multica 桥接设置</h1>
+    <p class="subtitle">配置 Multica 平台连接参数，修改后自动保存热生效</p>
+
+    <!-- Connection Settings -->
+    <div class="card">
+      <h2>连接配置</h2>
+      <div class="field">
+        <div>
+          <div class="field-label">启用 Multica 桥接</div>
+          <div class="field-hint">关闭后插件完全停止</div>
+        </div>
+        <label class="switch field-control">
+          <input type="checkbox" id="field-enabled" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="field">
+        <div>
+          <div class="field-label">Multica API 地址</div>
+          <div class="field-hint">例如 http://your-server:8080</div>
+        </div>
+        <input type="text" id="field-api_url" class="field-control" placeholder="http://localhost:8080" />
+      </div>
+      <div class="field">
+        <div>
+          <div class="field-label">认证 Token</div>
+          <div class="field-hint">Multica 平台的 API 认证 Token</div>
+        </div>
+        <input type="text" id="field-token" class="field-control" placeholder="输入 Token" />
+      </div>
+      <div class="field">
+        <div>
+          <div class="field-label">工作区 ID</div>
+          <div class="field-hint">Multica 工作区的 UUID</div>
+        </div>
+        <input type="text" id="field-workspace_id" class="field-control" placeholder="UUID" />
+      </div>
+      <div class="field">
+        <div>
+          <div class="field-label">项目 ID</div>
+          <div class="field-hint">可选，指定后数据关联到特定项目</div>
+        </div>
+        <input type="text" id="field-project_id" class="field-control" placeholder="UUID（可选）" />
+      </div>
+    </div>
+
+    <!-- Sync Settings -->
+    <div class="card">
+      <h2>同步设置</h2>
+      <div class="field">
+        <div>
+          <div class="field-label">自动同步数据</div>
+          <div class="field-hint">开启后定期自动同步到 Multica</div>
+        </div>
+        <label class="switch field-control">
+          <input type="checkbox" id="field-sync_reports" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="field">
+        <div>
+          <div class="field-label">同步间隔（分钟）</div>
+          <div class="field-hint">建议 60 分钟</div>
+        </div>
+        <input type="number" id="field-sync_interval_minutes" class="field-control" min="1" value="60" />
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card">
+      <h2>连接测试</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        测试 Multica API 连通性，确保配置正确后再启用自动同步。
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-test">测试连接</button>
+        <span class="msg" id="test-result"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" style="opacity:0;pointer-events:none;"></div>
+
+  <script>
+    (function () {
+      const PLUGIN_NAME = 'astrbot_plugin_multica_bridge';
+      const FIELDS = ['enabled', 'api_url', 'token', 'workspace_id', 'project_id', 'sync_reports', 'sync_interval_minutes'];
+      const BOOLS = new Set(['enabled', 'sync_reports']);
+
+      let cfg = {};
+      let bridgeReady = false;
+      let bridge = null;
+      let saveTimer = null;
+
+      // ── Bridge ──
+      function getBridge() {
+        if (bridge) return bridge;
+        if (typeof window.AstrBotPluginPage !== 'undefined') {
+          bridge = window.AstrBotPluginPage;
+        }
+        return bridge;
+      }
+
+      async function apiGet(endpoint, params) {
+        const b = getBridge();
+        if (!b) throw new Error('Bridge SDK 未就绪');
+        const r = await b.apiGet(endpoint, params || {});
+        return extractData(r);
+      }
+
+      async function apiPost(endpoint, body) {
+        const b = getBridge();
+        if (!b) throw new Error('Bridge SDK 未就绪');
+        const r = await b.apiPost(endpoint, body);
+        return extractData(r);
+      }
+
+      function extractData(response) {
+        if (response && typeof response === 'object') {
+          if (response.success === true) return response.data;
+          if (response.success === false) throw new Error(response.error || '请求失败');
+        }
+        return response;
+      }
+
+      // ── Theme ──
+      function applyTheme(isDark) {
+        document.body.classList.toggle('dark', !!isDark);
+      }
+      function watchTheme() {
+        const b = getBridge();
+        if (b && typeof b.isDark !== 'undefined') applyTheme(b.isDark);
+        if (b && typeof b.onThemeChange === 'function') {
+          b.onThemeChange(applyTheme);
+        }
+      }
+
+      // ── Toast ──
+      let toastTimer = null;
+      function showToast(msg, cls) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast ' + (cls || 'toast-info');
+        t.style.opacity = '1';
+        t.style.pointerEvents = 'auto';
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          t.style.opacity = '0';
+          t.style.pointerEvents = 'none';
+        }, 2500);
+      }
+
+      // ── Load Config ──
+      async function loadConfig() {
+        try {
+          const data = await apiGet('config');
+          cfg = data || {};
+          FIELDS.forEach(function (k) {
+            var el = document.getElementById('field-' + k);
+            if (!el) return;
+            if (BOOLS.has(k)) {
+              el.checked = !!cfg[k];
+            } else {
+              el.value = cfg[k] != null ? String(cfg[k]) : '';
+            }
+          });
+        } catch (e) {
+          showToast('加载配置失败：' + e.message, 'toast-err');
+        }
+      }
+
+      // ── Save Config ──
+      function scheduleSave() {
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(doSave, 800);
+      }
+
+      async function doSave() {
+        try {
+          await apiPost('actions/save_config', cfg);
+          showToast('已保存', 'toast-ok');
+        } catch (e) {
+          showToast('保存失败：' + e.message, 'toast-err');
+        }
+      }
+
+      function setField(k, value) {
+        cfg[k] = value;
+        scheduleSave();
+      }
+
+      // ── Bind Fields ──
+      function bindFields() {
+        FIELDS.forEach(function (k) {
+          var el = document.getElementById('field-' + k);
+          if (!el) return;
+          if (BOOLS.has(k)) {
+            el.addEventListener('change', function () {
+              setField(k, el.checked);
+            });
+          } else if (el.type === 'number') {
+            el.addEventListener('input', function () {
+              setField(k, parseInt(el.value, 10) || 0);
+            });
+          } else {
+            el.addEventListener('input', function () {
+              setField(k, el.value);
+            });
+          }
+        });
+      }
+
+      // ── Test Connection ──
+      async function testConnection() {
+        var btn = document.getElementById('btn-test');
+        var result = document.getElementById('test-result');
+        btn.disabled = true;
+        btn.textContent = '测试中…';
+        result.textContent = '';
+        try {
+          var r = await apiPost('actions/test_connection');
+          if (r.ok) {
+            result.innerHTML = '<span class="status-dot status-ok"></span>连接成功' + (r.workspace_name ? ' — ' + r.workspace_name : '');
+          } else {
+            result.innerHTML = '<span class="status-dot status-err"></span>' + r.message;
+          }
+        } catch (e) {
+          result.innerHTML = '<span class="status-dot status-err"></span>' + e.message;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '测试连接';
+        }
+      }
+
+      // ── Init ──
+      async function init() {
+        bridge = getBridge();
+        if (!bridge) {
+          // Retry
+          setTimeout(init, 300);
+          return;
+        }
+        bridgeReady = true;
+        watchTheme();
+        bindFields();
+        await loadConfig();
+        document.getElementById('btn-test').addEventListener('click', testConnection);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>

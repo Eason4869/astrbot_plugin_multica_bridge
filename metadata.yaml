@@ -6,3 +6,7 @@ author: 彧晟Eason
 repo: "https://github.com/Eason4869/astrbot_plugin_multica_bridge"
 display_name: Multica桥接
 astrbot_version: ">=4.24.2"
+pages:
+  - name: settings
+    title: Multica 桥接设置
+    entry_file: index.html
