@@ -6,6 +6,7 @@
 
 - 新增 `/multica issue create <标题> [--desc 描述]` 指令：通过 HTTP API 直接创建 Issue，不依赖本机安装 `multica` CLI / PATH
 - `MulticaClient.create_issue()`：调用 `POST /api/issues`，字段与 CLI 对齐（title/description/priority/status/assignee_id/project_id/parent_issue_id/due_date/labels）
+- WebUI 设置页新增「指令说明」卡片，列出全部 `/multica` 指令用法
 
 ### Why
 

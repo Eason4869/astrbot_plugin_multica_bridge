@@ -161,6 +161,17 @@
     .filter-list-textarea:focus { border-color: var(--accent); }
     .filter-field { flex-direction: column; align-items: flex-start; }
     .filter-field .field-control { margin-left: 0; }
+    code {
+      background: var(--input-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: Consolas, "Courier New", monospace;
+    }
+    .cmd-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+    .cmd-table td { padding: 5px 8px 5px 0; vertical-align: top; }
+    .cmd-table td:first-child { white-space: nowrap; }
+    .cmd-table td:last-child { color: var(--text-muted); }
   </style>
 </head>
 <body>
@@ -273,6 +284,20 @@
           <textarea id="field-private_chat_list" class="filter-list-textarea" rows="3" placeholder="123456789&#10;987654321"></textarea>
         </div>
       </div>
+    </div>
+
+    <!-- Commands -->
+    <div class="card">
+      <h2>指令说明</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        在允许的群聊/私聊中发送以下指令即可操作 Multica：
+      </p>
+      <table class="cmd-table">
+        <tr><td><code>/multica help</code></td><td>显示帮助信息</td></tr>
+        <tr><td><code>/multica status</code></td><td>检查 Multica 连接状态</td></tr>
+        <tr><td><code>/multica sync</code></td><td>手动触发数据同步</td></tr>
+        <tr><td><code>/multica issue create &lt;标题&gt; [--desc 描述]</code></td><td>通过 API 新建 Issue（不依赖本机 CLI）</td></tr>
+      </table>
     </div>
 
     <!-- Actions -->
