@@ -1,7 +1,11 @@
-# AstrBot Multica 桥接插件
+<p align="center">
+  <img src="logo.svg" width="110" height="110" alt="Multica Bridge Logo" />
+</p>
+
+<h1 align="center">AstrBot Multica 桥接插件</h1>
 
 <p align="center">
-  <img src="logo.svg" width="96" height="96" alt="Multica Bridge Logo" />
+  <em>✨ AstrBot × Multica ✦ 一键接入 ✦ ChatOps 赋能 ✨</em>
 </p>
 
 <p align="center">
@@ -13,6 +17,10 @@
   <img src="https://img.shields.io/badge/%E8%B5%9E%E5%8A%A9-%E6%89%93%E8%B5%8F%E6%94%AF%E6%8C%81-ff69b4" alt="赞助支持" />
 </p>
 
+<p align="center">
+  <img src="assets/banner-anime.jpg" width="640" alt="Anime banner" />
+</p>
+
 将 AstrBot QQ 机器人接入 [Multica](https://multica.ai) 平台，实现连接测试、ChatOps 等功能。
 
 <p align="center">
@@ -21,7 +29,7 @@
 
 ---
 
-## 功能
+## ✨ 功能
 
 - **连接测试**：一键验证 Multica API 连通性
 - **配置热生效**：WebUI 中修改配置后即时生效，无需重载
@@ -35,7 +43,7 @@
 
 ---
 
-## 安装
+## 📦 安装
 
 ### 方式一：AstrBot WebUI 插件市场
 
@@ -52,7 +60,7 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 ---
 
-## 配置
+## ⚙️ 配置
 
 所有配置项均可在 **AstrBot WebUI → 插件 → Multica桥接 → 设置** 页面中修改，修改后自动保存热生效。
 
@@ -81,7 +89,7 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 ---
 
-## 如何获取 Multica API 地址、 Token 和 UUID
+## 🔑 获取 Multica API 地址、Token 和 UUID
 
 ### 1. 获取 API 地址
 
@@ -220,7 +228,7 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 
 ---
 
-## 指令
+## 💬 指令
 
 在任意允许的群聊或私聊中发送以下命令：
 
@@ -248,7 +256,7 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 
 ---
 
-## API 端点
+## 🔌 API 端点
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -258,7 +266,7 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 
 ---
 
-## 开发
+## 🛠️ 开发
 
 ```bash
 # 克隆仓库
@@ -271,7 +279,7 @@ cd astrbot_plugin_multica_bridge
 
 ---
 
-## 更新日志
+## 📝 更新日志
 
 详见 [CHANGELOG.md](CHANGELOG.md)
 
@@ -293,6 +301,16 @@ cd astrbot_plugin_multica_bridge
 
 ---
 
-## 许可证
+## 📄 许可证
 
 MIT
+
+---
+
+<p align="center">
+  <img src="assets/banner-anime-2.webp" width="360" alt="Thanks for reading" />
+</p>
+
+<p align="center">
+  <sub>Made with 💜 · 如果这个项目对你有帮助，欢迎点个 ⭐ Star</sub>
+</p>
