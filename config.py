@@ -13,7 +13,7 @@ from typing import Any
 
 CONFIG_DEFAULTS: dict[str, Any] = {
     "enabled": True,
-    "api_url": "http://localhost:8080",
+    "api_url": "https://multica.ai",
     "token": "",
     "workspace_id": "",   # 可选，留空则自动从 /api/workspace 获取
     "project_id": "",     # 可选

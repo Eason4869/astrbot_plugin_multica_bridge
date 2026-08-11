@@ -63,7 +63,7 @@ def check_chat_allowed(cfg: dict[str, Any] | None, chat_type: str, chat_id: str)
 class MulticaClient:
     """Multica API 轻量客户端。
 
-    workspace_id 如果留空，会在首次 API 调用时自动从 /api/workspace 获取。
+    workspace_id 如果留空，会在首次 API 调用时自动从 /api/workspaces 获取。
     """
 
     def __init__(self, cfg: dict[str, Any] | None) -> None:
@@ -104,7 +104,7 @@ class MulticaClient:
         import aiohttp
 
         try:
-            url = urljoin(self._api_url + "/", "api/workspace")
+            url = urljoin(self._api_url + "/", "api/workspaces")
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     url,
@@ -113,18 +113,29 @@ class MulticaClient:
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        # 兼容两种响应结构：顶层字段 或 { data: { ... } }
-                        inner = data if isinstance(data, dict) else {}
-                        if "data" in inner and isinstance(inner.get("data"), dict):
-                            inner = inner["data"]
-                        name = inner.get("name") or None
-                        wsid = inner.get("id") or None
+                        # API 返回工作区列表 [{id, name, slug, ...}, ...]
+                        workspaces = data if isinstance(data, list) else [data]
+                        if not workspaces:
+                            return {
+                                "ok": False,
+                                "message": "该 Token 下没有可访问的工作区",
+                                "workspace_name": None,
+                            }
+                        ws = workspaces[0]
+                        name = ws.get("name") or None
+                        wsid = ws.get("id") or None
                         # 自动缓存（当前值非 UUID 时覆盖）
                         if wsid and not _is_uuid(self._workspace_id):
                             self._workspace_id = str(wsid)
                         if name:
                             self._workspace_name = str(name)
                         return {"ok": True, "message": "连接成功", "workspace_name": name}
+                    if resp.status == 401:
+                        return {
+                            "ok": False,
+                            "message": "Token 无效，请在 Multica 控制台重新生成",
+                            "workspace_name": None,
+                        }
                     body = await resp.text()
                     return {
                         "ok": False,
@@ -139,7 +150,7 @@ class MulticaClient:
             }
 
     async def _ensure_workspace_id(self) -> None:
-        """如果 workspace_id 为空或不是 UUID 格式，调用 /api/workspace 自动获取。"""
+        """如果 workspace_id 为空或不是 UUID 格式，调用 /api/workspaces 自动获取。"""
         if self._workspace_id and _is_uuid(self._workspace_id):
             return
         result = await self.test_connection()

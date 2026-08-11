@@ -2,10 +2,17 @@
 
 ## [0.2.2] - 2026-08-11
 
+### Fixed
+
+- 修复 API 端点：`/api/workspace` → `/api/workspaces`（与实际 Multica API 匹配）
+- 修复默认 API 地址：`http://localhost:8080` → `https://multica.ai`
+- WebUI 提示文字同步更新
+
 ### Changed
 
-- `workspace_id` 改为可选：留空时自动从 `/api/workspace` 获取 UUID 并缓存，用户只需配 `api_url` + `token` 两项即可
+- `workspace_id` 改为可选：留空时自动从 `/api/workspaces` 获取 UUID 并缓存，用户只需配 `api_url` + `token` 两项即可
 - `test_connection()` 成功时自动缓存 workspace_id 和 workspace_name
+- 401 错误给出明确的 Token 失效提示
 ## [0.2.1] - 2026-08-11
 
 ### Fixed
