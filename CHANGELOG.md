@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.0] - 2026-08-11
+
+### Added
+
+- 新增 `/multica workspace list` 指令：列出当前 Token 可访问的所有工作区（名称、slug、id）
+- 新增 `/multica workspace select <id|slug>` 指令：切换当前工作区，通过 `save_plugin_config`
+  原子写入插件自有 `config.json` 的 `workspace_id` 字段，重启后仍生效
+- 新增 `/multica workspace create <名称> [--slug slug] [--desc 描述]` 指令：
+  调用 `POST /api/workspaces` 创建工作区，slug 缺省时按名称自动生成（小写字母/数字/连字符）
+- `MulticaClient` 新增 `list_workspaces()`、`create_workspace()`，并重构 `test_connection()`
+  复用列表接口；`_ensure_workspace_id()` 改为按已配置的 workspace_id/slug 精确匹配当前工作区
+- `/multica help` 与 WebUI「指令说明」卡片同步新增 workspace 命令
+
+### Why
+
+- 用户需要在不打开 Web 控制台的情况下查看/切换多个工作区，并直接在聊天中创建新工作区；
+  工作区选择仅持久化配置，无独立 API 调用。
+
 ## [0.4.0] - 2026-08-11
 
 ### Removed

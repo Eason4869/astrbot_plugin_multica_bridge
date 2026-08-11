@@ -1,6 +1,6 @@
 """Multica 桥接插件主入口。
 
-将 AstrBot 接入 Multica 平台：连接测试、通过聊天指令创建 Issue。
+将 AstrBot 接入 Multica 平台：连接测试、通过聊天指令创建 Issue、管理工作区。
 所有配置通过 WebUI 设置页管理，修改后自动保存热生效。
 """
 
@@ -123,13 +123,16 @@ class Main(WebApiMixin, Star):
 
             # 解析子命令（text 已去除前缀，空文本 = help）
             sub = text.split(maxsplit=1)[0].strip() if text else "help"
+            args = text[len(sub):].strip() if text else ""
 
             if sub in ("help", "帮助"):
                 await self._cmd_help(event)
             elif sub in ("status", "状态"):
                 await self._cmd_status(event)
             elif sub in ("issue", "议题"):
-                await self._cmd_issue(event, text[len(sub):].strip())
+                await self._cmd_issue(event, args)
+            elif sub in ("workspace", "工作区"):
+                await self._cmd_workspace(event, args)
             else:
                 await self._reply(event, f"未知子命令: {sub}\n发送 /multica help 查看帮助")
 
@@ -142,7 +145,10 @@ class Main(WebApiMixin, Star):
             "Multica 桥接插件命令：\n"
             "/multica help  — 显示此帮助\n"
             "/multica status — 检查 Multica 连接状态\n"
-            "/multica issue create <标题> [--desc 描述] — 新建 Issue"
+            "/multica issue create <标题> [--desc 描述] — 新建 Issue\n"
+            "/multica workspace list — 列出可访问的工作区\n"
+            "/multica workspace select <id|slug> — 切换当前工作区（持久化）\n"
+            "/multica workspace create <名称> [--slug slug] [--desc 描述] — 创建工作区"
         )
         await self._reply(event, help_text)
 
@@ -194,6 +200,177 @@ class Main(WebApiMixin, Star):
             await self._reply(event, f"✅ {result['message']}")
         else:
             await self._reply(event, f"❌ 创建失败：{result['message']}")
+
+    async def _cmd_workspace(self, event: AstrMessageEvent, args: str) -> None:
+        """处理 /multica workspace 子命令（list / select / create）。"""
+        parts = args.split()
+        action = parts[0] if parts else ""
+        rest = args[len(action):].strip() if action else ""
+
+        if action in ("list", "列表"):
+            await self._cmd_workspace_list(event)
+        elif action in ("select", "选择", "切换"):
+            await self._cmd_workspace_select(event, rest)
+        elif action in ("create", "新建"):
+            await self._cmd_workspace_create(event, rest)
+        else:
+            await self._reply(
+                event,
+                "用法：\n"
+                "/multica workspace list\n"
+                "/multica workspace select <id|slug>\n"
+                "/multica workspace create <名称> [--slug slug] [--desc 描述]",
+            )
+
+    async def _cmd_workspace_list(self, event: AstrMessageEvent) -> None:
+        """列出当前 Token 可访问的所有工作区。"""
+        from .multica_client import MulticaClient
+
+        client = MulticaClient(self.cfg)
+        result = await client.list_workspaces()
+        if not result["ok"]:
+            await self._reply(event, f"❌ 获取工作区失败：{result['message']}")
+            return
+
+        workspaces = result["workspaces"]
+        current = (self.cfg.get("workspace_id") or "").strip().lower()
+        lines = [f"共 {len(workspaces)} 个工作区："]
+        for ws in workspaces:
+            if not isinstance(ws, dict):
+                continue
+            name = ws.get("name") or "（未命名）"
+            slug = ws.get("slug") or ""
+            wsid = ws.get("id") or ""
+            marker = " ✓" if wsid and str(wsid).lower() == current else ""
+            lines.append(f"• {name}（slug: {slug}）{marker}\n  {wsid}")
+        lines.append("发送 /multica workspace select <id|slug> 可切换当前工作区")
+        await self._reply(event, "\n".join(lines))
+
+    async def _cmd_workspace_select(self, event: AstrMessageEvent, target: str) -> None:
+        """切换当前工作区并持久化到插件自有 config.json。"""
+        from .multica_client import MulticaClient
+
+        target = (target or "").strip()
+        if not target:
+            await self._reply(
+                event,
+                "用法：/multica workspace select <id|slug>\n"
+                "示例：/multica workspace select eason-service",
+            )
+            return
+
+        client = MulticaClient(self.cfg)
+        result = await client.list_workspaces()
+        if not result["ok"]:
+            await self._reply(event, f"❌ 获取工作区失败：{result['message']}")
+            return
+
+        ws = client.find_workspace(target, result["workspaces"])
+        if ws is None:
+            await self._reply(
+                event,
+                f"❌ 未找到工作区 {target}。可用列表请查看 /multica workspace list",
+            )
+            return
+
+        wsid = str(ws.get("id") or "").strip()
+        name = ws.get("name") or "（未命名）"
+        if not wsid:
+            await self._reply(event, "❌ 目标工作区缺少 id，无法切换")
+            return
+
+        self.cfg["workspace_id"] = wsid
+        self._save_cfg()
+        await self._reply(
+            event,
+            f"✅ 已切换到工作区 {name}（{wsid}）\n"
+            "该选择已持久化，重启后仍然生效。",
+        )
+
+    async def _cmd_workspace_create(self, event: AstrMessageEvent, args: str) -> None:
+        """创建工作区（name 必填，slug 缺省时按名称自动生成）。"""
+        from .multica_client import MulticaClient
+
+        parts = (args or "").split()
+        if not parts:
+            await self._reply(
+                event,
+                "用法：/multica workspace create <名称> [--slug slug] [--desc 描述]\n"
+                "示例：/multica workspace create 项目A --slug project-a --desc 测试环境",
+            )
+            return
+
+        name = ""
+        slug = ""
+        desc = ""
+        context = ""
+        flags = ("--slug", "--desc", "--context")
+        flag_indexes = {f: (parts.index(f) if f in parts else -1) for f in flags}
+        present = sorted((i, f) for f, i in flag_indexes.items() if i >= 0)
+        if present:
+            first_flag_idx = present[0][0]
+            name = " ".join(parts[:first_flag_idx]).strip()
+            for n, (idx, flag) in enumerate(present):
+                end = present[n + 1][0] if n + 1 < len(present) else len(parts)
+                value = " ".join(parts[idx + 1:end]).strip()
+                if not value:
+                    await self._reply(event, f"❌ 参数 {flag} 缺少值")
+                    return
+                if flag == "--slug":
+                    slug = value
+                elif flag == "--desc":
+                    desc = value
+                elif flag == "--context":
+                    context = value
+        else:
+            name = " ".join(parts).strip()
+
+        if not name:
+            await self._reply(event, "❌ 工作区名称不能为空")
+            return
+
+        if not slug:
+            slug = self._slugify(name)
+        if not slug:
+            await self._reply(
+                event,
+                "❌ 无法从名称自动生成 slug，请使用 --slug 指定"
+                "（仅允许小写字母、数字和连字符）",
+            )
+            return
+
+        client = MulticaClient(self.cfg)
+        result = await client.create_workspace(
+            name=name,
+            slug=slug,
+            description=desc,
+            context=context,
+        )
+        if result["ok"]:
+            await self._reply(event, f"✅ {result['message']}")
+        else:
+            await self._reply(event, f"❌ 创建失败：{result['message']}")
+
+    @staticmethod
+    def _slugify(name: str) -> str:
+        """按名称自动生成 slug：仅保留字母/数字/空格，空格转连字符，转小写。"""
+        import re
+
+        cleaned = re.sub(r"[^a-zA-Z0-9 ]", "", name).strip().lower()
+        return re.sub(r"\s+", "-", cleaned)
+
+    def _save_cfg(self) -> None:
+        """将当前 self.cfg 原子写入插件自有 config.json。"""
+        try:
+            from .config import save_plugin_config
+
+            data_dir = getattr(self, "_data_dir", None) or str(
+                Path(get_astrbot_data_path()) / "plugin_data" / self.name
+            )
+            save_plugin_config(data_dir, self.cfg)
+        except Exception as e:
+            logger.error("[multica_bridge] 保存配置失败: %s", e)
+            raise
 
     @staticmethod
     async def _reply(event: AstrMessageEvent, text: str) -> None:

@@ -1,6 +1,6 @@
 """Multica API 客户端。
 
-提供连接测试、Issue 创建等桥接功能。
+提供连接测试、Issue 创建、工作区管理等桥接功能。
 """
 
 from __future__ import annotations
@@ -89,16 +89,33 @@ class MulticaClient:
     async def test_connection(self) -> dict[str, Any]:
         """测试 Multica 连接是否正常。
 
-        成功时自动缓存 workspace_id 和 workspace_name，
-        用户无需手动填写 workspace_id 配置项。
+        成功时自动缓存 workspace_name，用户无需手动填写 workspace_id 配置项。
+        """
+        result = await self.list_workspaces()
+        if not result["ok"]:
+            return {
+                "ok": False,
+                "message": result["message"],
+                "workspace_name": None,
+            }
+        _ws, name, _wsid = self._pick_workspace(result["workspaces"])
+        if name:
+            self._workspace_name = str(name)
+        return {"ok": True, "message": "连接成功", "workspace_name": name}
+
+    async def list_workspaces(self) -> dict[str, Any]:
+        """获取当前 Token 可访问的所有工作区。
+
+        返回 ``{"ok": True, "workspaces": [{id, name, slug, ...}, ...]}``
+        或 ``{"ok": False, "message": "..."}``。
         """
         if not self._enabled:
-            return {"ok": False, "message": "Multica 桥接未启用", "workspace_name": None}
+            return {"ok": False, "message": "Multica 桥接未启用", "workspaces": []}
         if not self._api_url or not self._token:
             return {
                 "ok": False,
                 "message": "Multica API 地址或 Token 未配置",
-                "workspace_name": None,
+                "workspaces": [],
             }
 
         import aiohttp
@@ -113,52 +130,83 @@ class MulticaClient:
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        # API 返回工作区列表 [{id, name, slug, ...}, ...]
+                        # API 返回工作区列表: [{id, name, slug, ...}, ...]
                         workspaces = data if isinstance(data, list) else [data]
                         if not workspaces:
                             return {
                                 "ok": False,
                                 "message": "该 Token 下没有可访问的工作区",
-                                "workspace_name": None,
+                                "workspaces": [],
                             }
-                        ws = workspaces[0]
-                        name = ws.get("name") or None
-                        wsid = ws.get("id") or None
-                        # 自动缓存（当前值非 UUID 时覆盖）
-                        if wsid and not _is_uuid(self._workspace_id):
-                            self._workspace_id = str(wsid)
-                        if name:
-                            self._workspace_name = str(name)
-                        return {"ok": True, "message": "连接成功", "workspace_name": name}
+                        return {"ok": True, "workspaces": workspaces}
                     if resp.status == 401:
                         return {
                             "ok": False,
                             "message": "Token 无效，请在 Multica 控制台重新生成",
-                            "workspace_name": None,
+                            "workspaces": [],
                         }
                     body = await resp.text()
                     return {
                         "ok": False,
                         "message": f"HTTP {resp.status}: {body[:200]}",
-                        "workspace_name": None,
+                        "workspaces": [],
                     }
         except Exception as e:
             return {
                 "ok": False,
                 "message": f"连接失败：{type(e).__name__}: {e}",
-                "workspace_name": None,
+                "workspaces": [],
             }
+
+    def _pick_workspace(
+        self, workspaces: list[dict[str, Any]]
+    ) -> tuple[dict[str, Any] | None, str | None, str | None]:
+        """从工作区列表中挑出当前工作区。
+
+        优先匹配配置的 workspace_id（支持 UUID 或 slug），
+        未配置或未命中时取第一个，与旧版自动获取行为一致。
+        返回 (workspace, name, id)。
+        """
+        want = (self._workspace_id or "").strip().lower()
+        for ws in workspaces:
+            if not isinstance(ws, dict):
+                continue
+            wsid = str(ws.get("id") or "").strip().lower()
+            slug = str(ws.get("slug") or "").strip().lower()
+            if want and want in (wsid, slug):
+                return ws, ws.get("name") or None, ws.get("id") or None
+        ws = next((w for w in workspaces if isinstance(w, dict)), None)
+        if ws is None:
+            return None, None, None
+        return ws, ws.get("name") or None, ws.get("id") or None
+
+    def find_workspace(self, value: str, workspaces: list[dict[str, Any]]) -> dict[str, Any] | None:
+        """按 id（支持完整 UUID 或前缀）或 slug（不区分大小写）查找工作区。"""
+        target = (value or "").strip().lower()
+        if not target:
+            return None
+        for ws in workspaces:
+            if not isinstance(ws, dict):
+                continue
+            wsid = str(ws.get("id") or "").strip().lower()
+            slug = str(ws.get("slug") or "").strip().lower()
+            if target in (wsid, slug) or (len(target) >= 8 and wsid.startswith(target)):
+                return ws
+        return None
 
     async def _ensure_workspace_id(self) -> None:
         """如果 workspace_id 为空或不是 UUID 格式，调用 /api/workspaces 自动获取。"""
         if self._workspace_id and _is_uuid(self._workspace_id):
             return
-        result = await self.test_connection()
+        result = await self.list_workspaces()
         if not result["ok"]:
             raise RuntimeError(
                 f"无法自动获取 workspace_id: {result['message']}。"
                 "请检查 api_url 和 token 是否正确，或手动填写 workspace_id。"
             )
+        _ws, _name, wsid = self._pick_workspace(result["workspaces"])
+        if wsid:
+            self._workspace_id = str(wsid)
 
     async def create_issue(
         self,
@@ -175,7 +223,7 @@ class MulticaClient:
     ) -> dict[str, Any]:
         """通过 Multica HTTP API 创建 Issue。
 
-        直接调用 ``POST /api/issues``，不依赖本机是否安装 ``multica`` CLI、
+        直接调用 ``POST /api/issues``，不依赖本机是否安装 ``multica`` CLI。
         也不依赖 CLI 是否加入 PATH —— 规避“本机未安装 multica”这类误报。
         """
         if not self._enabled:
@@ -260,4 +308,73 @@ class MulticaClient:
             return {
                 "ok": False,
                 "message": f"创建失败：{type(e).__name__}: {e}",
+            }
+
+    async def create_workspace(
+        self,
+        *,
+        name: str,
+        slug: str = "",
+        description: str = "",
+        context: str = "",
+        issue_prefix: str = "",
+    ) -> dict[str, Any]:
+        """通过 Multica HTTP API 创建工作区。
+
+        ``POST /api/workspaces``，请求体字段与 CLI 对齐：
+        name/slug 必填，description/context/issue_prefix 可选。
+        """
+        if not self._enabled:
+            return {"ok": False, "message": "Multica 桥接未启用"}
+        if not self._api_url or not self._token:
+            return {"ok": False, "message": "API 地址或 Token 未配置"}
+        if not name or not name.strip():
+            return {"ok": False, "message": "缺少工作区名称"}
+        if not slug or not slug.strip():
+            return {"ok": False, "message": "缺少工作区 slug"}
+
+        payload: dict[str, Any] = {
+            "name": name.strip(),
+            "slug": slug.strip().lower(),
+        }
+        if description:
+            payload["description"] = description
+        if context:
+            payload["context"] = context
+        if issue_prefix:
+            payload["issue_prefix"] = issue_prefix
+
+        import aiohttp
+
+        try:
+            url = urljoin(self._api_url + "/", "api/workspaces")
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url,
+                    headers=self._headers(),
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as resp:
+                    if resp.status in (200, 201):
+                        data = await resp.json()
+                        wslug = data.get("slug") or ""
+                        return {
+                            "ok": True,
+                            "message": f"已创建工作区 {data.get('name') or name}（slug: {wslug}）",
+                            "workspace": data,
+                        }
+                    if resp.status == 401:
+                        return {
+                            "ok": False,
+                            "message": "Token 无效，请在 Multica 控制台重新生成",
+                        }
+                    body = await resp.text()
+                    return {
+                        "ok": False,
+                        "message": f"HTTP {resp.status}: {body[:300]}",
+                    }
+        except Exception as e:
+            return {
+                "ok": False,
+                "message": f"创建工作区失败：{type(e).__name__}: {e}",
             }

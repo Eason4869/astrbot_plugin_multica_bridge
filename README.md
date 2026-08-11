@@ -13,6 +13,7 @@
 - **连接测试**：一键验证 Multica API 连通性
 - **配置热生效**：WebUI 中修改配置后即时生效，无需重载
 - **Issue 创建**：支持通过 `/multica issue create` 在聊天中直接新建 Issue
+- **工作区管理**：支持通过 `/multica workspace` 列出、切换、创建工作区
 - **Token 安全**：API 返回配置时自动脱敏敏感字段，防止误保存覆盖
 - **会话过滤**：支持群聊/私聊的黑白名单模式，精准控制插件生效范围
 - **命令交互**：支持 `/multica` 系列指令，在聊天中直接操作
@@ -209,6 +210,9 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 | `/multica help` | 显示帮助信息 |
 | `/multica status` | 检查 Multica 连接状态 |
 | `/multica issue create <标题> [--desc 描述]` | 通过 API 新建 Issue（不依赖本机 CLI） |
+| `/multica workspace list` | 列出当前 Token 可访问的所有工作区 |
+| `/multica workspace select <id|slug>` | 切换当前工作区（持久化到插件 config.json，重启后仍生效） |
+| `/multica workspace create <名称> [--slug slug] [--desc 描述]` | 创建工作区（slug 缺省时按名称自动生成） |
 
 > 提示：`/multica issue create` 直接调用 Multica HTTP API 创建 Issue，
 > 不依赖本机是否安装 `multica` CLI、也不要求 CLI 加入 PATH，
