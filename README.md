@@ -187,10 +187,10 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 
 |操作|Web 界面|CLI 本地终端|
 |-|-|-|
-|当前工作区 UUID|`multica workspace get --output json`|同上|
-|所有工作区 UUID|`multica workspace list --full-id`|同上|
-|单个 Issue UUID|`multica issue get <id> --output json`|同上|
-|所有 Issue UUID|`multica issue list --full-id`|同上|
+|当前工作区 UUID|`multica workspace get --output json`|同左|
+|所有工作区 UUID|`multica workspace list --full-id`|同左|
+|单个 Issue UUID|`multica issue get <id> --output json`|同左|
+|所有 Issue UUID|`multica issue list --full-id`|同左|
 |管道/脚本处理|不支持|支持 `jq` 等|
 |登录方式|浏览器已登录|需 `multica login`|
 
