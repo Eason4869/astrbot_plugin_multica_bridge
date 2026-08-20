@@ -238,7 +238,7 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 | `/multica status` | 检查 Multica 连接状态 |
 | `/multica issue create <标题> [--desc 描述]` | 通过 API 新建 Issue（不依赖本机 CLI） |
 | `/multica workspace list` | 列出当前 Token 可访问的所有工作区 |
-| `/multica workspace select <id|slug>` | 切换当前工作区（持久化到插件 config.json，重启后仍生效） |
+| `/multica workspace select <id-slug>` | 切换当前工作区（持久化到插件 config.json，重启后仍生效） |
 | `/multica workspace create <名称> [--slug slug] [--desc 描述]` | 创建工作区（slug 缺省时按名称自动生成） |
 | `/multica project list` | 列出当前工作区下的所有项目（标题、id） |
 | `/multica project select <id>` | 切换当前项目（持久化到插件 config.json，重启后仍生效；新建 Issue 默认进入所选项目） |
