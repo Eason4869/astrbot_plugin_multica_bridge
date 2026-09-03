@@ -191,22 +191,6 @@ cd astrbot_plugin_multica_bridge
 
 ---
 
-## ⭐️ 赞助
-
-如果这个项目对你有帮助，欢迎扫码打赏支持一下！你的每一份心意，都是项目持续维护的动力 ☕✨
-
-<p align="center">
-  <img src="donate-qr.jpg" width="200" alt="微信/支付宝收款码" />
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="donate-qr-2.jpg" width="200" alt="微信/支付宝收款码" />
-  <br />
-  <sub>💚 微信 · 💙 支付宝 · 扫码打赏，支持开源</sub>
-</p>
-
-> 💡 打赏为纯自愿行为，不附带任何付费特权；感谢每一位支持者，谢谢大家！🙏
-
----
-
 ## 📄 许可证
 
 MIT
