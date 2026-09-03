@@ -40,6 +40,7 @@
 - **Token 安全**：API 返回配置时自动脱敏敏感字段，防止误保存覆盖
 - **会话过滤**：支持群聊/私聊的黑白名单模式，精准控制插件生效范围
 - **命令交互**：支持 `/multica` 系列指令，在聊天中直接操作
+- **权限管理**：`/multica` 作为 AstrBot 一等指令，可在「指令管理」中设为仅管理员等
 
 ---
 
@@ -89,142 +90,41 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 ---
 
-## 🔑 获取 Multica API 地址、Token 和 UUID
+## 🔑 获取 API 地址、Token 与 UUID
 
-### 1. 获取 API 地址
+### 1. API 地址
 
-1. Multica Cloud模式（推荐）：一般为 `https://multica.ai`
-2. 自托管模式：一般为你的 Multica 服务器地址（未经测试验证）
+1. Multica Cloud 模式（推荐）：一般为 `https://multica.ai`
+2. 自托管模式：一般为你的 Multica 服务器地址
 
-### 2. 获取认证 Token
+### 2. 认证 Token
 
 1. 登录 Multica Web 控制台
 2. 进入 **设置 → API 密钥**（或 **Settings → API Keys**）
 3. 点击 **创建密钥**，输入名称（如 `AstrBot Bridge`）
-4. 复制生成的 Token，填入本插件的认证 Token 配置项
+4. 复制生成的 Token，填入插件的「认证 Token」配置项
 
-### 3. 获取工作区及issue UUID（可选）
+### 3. 工作区 / 项目 / Issue UUID（一般无需手动填写）
 
-插件会自动获取工作区 ID，**一般无需手动填写**。如果你需要手动指定，可在 Multica Web 控制台的工作区设置中查看 UUID。
+插件会在首次调用时**自动解析当前工作区**的 ID，并可通过 `/multica workspace list`
+等在聊天中查看与切换，多数场景下不需要手动获取 UUID。
 
+如确需在平台侧查阅，可用平台自身的查看命令（Web 端或终端语法一致），例如：
 
-**1. Multica Web 界面（浏览器）**
+- 查看工作区完整信息：`multica workspace get --output json`
+- 列出工作区 / Issue：`multica workspace list`、`multica issue list`（可加 `--full-id` 展示完整 UUID）
+- 查看单个 Issue 详情：`multica issue get <id> --output json`
 
-在 Web 界面的聊天输入框中直接输入命令即可，无需额外安装任何工具。
+JSON 输出中的 `id` 字段即为完整 UUID；而使用聊天指令时，标题 / slug / UUID
+都会展示给你，直接复制即可。
 
-**获取工作区 UUID**
+> 补充：本插件与 Multica 的交互**全部经由 HTTP API**（不依赖安装本地 CLI、
+> 也不要求其加入 PATH），因此无论你使用 Web 端还是终端维护数据，
+> 插件都能正确取用工作区 / 项目与 Issue。
 
-```bash
-# 查看当前工作区完整信息（含 UUID、名称、描述、仓库等）
-multica workspace get --output json
-
-# 查看所有工作区列表（表格形式，UUID 默认截断）
-multica workspace list
-
-# 查看所有工作区列表 + 完整 UUID
-multica workspace list --full-id
-```
-
-JSON 输出中的 `id` 字段即为完整 UUID。
-
-**获取 Issue UUID**
-
-```bash
-# 查看单个 Issue 详情（含完整 UUID）
-multica issue get <issue-id> --output json
-# 示例：multica issue get WS-34 --output json
-
-# 查看所有 Issue 列表（表格形式，UUID 默认截断）
-multica issue list
-
-# 查看所有 Issue 列表 + 完整 UUID
-multica issue list --full-id
-```
-
-`<issue-id>` 可以是 Issue Key（如 `WS-34`）、完整 UUID，或 UUID 前缀（≥4 位十六进制）。
-
-**参数说明**
-
-|参数|作用|适用场景|
-|-|-|-|
-|`--output json`|输出结构化 JSON，`id` 字段天然为完整 UUID|脚本处理、自动化、`jq` 解析|
-|`--full-id`|表格模式下展开 UUID 列为完整值|人眼查看、复制粘贴|
-
-
-
-**2. Multica CLI（本地终端）**
-
-适用于 Windows / macOS / Linux 本地终端，需先安装并登录。
-
-**安装与登录**
-
-```bash
-# 安装 Multica CLI（具体安装方式参考官方文档）
-# 本机安装路径：C:\Users\eason\.multica\bin\multica.exe（已加入用户 PATH）
-
-# 登录
-multica login
-```
-
-**获取工作区 UUID**
-
-```bash
-# 查看当前工作区完整信息
-multica workspace get --output json
-
-# 指定工作区（支持 UUID / Slug / Short ID）
-multica workspace get <workspace-id> --output json
-# 示例：multica workspace get d79e9419 --output json
-# 示例：multica workspace get eason-service --output json
-
-# 列出所有工作区
-multica workspace list --output json
-multica workspace list --full-id
-```
-
-**获取 Issue UUID**
-
-```bash
-# 查看单个 Issue
-multica issue get <issue-id> --output json
-# 示例：multica issue get WS-34 --output json
-
-# 查询并筛选 Issue
-multica issue list --output json
-multica issue list --full-id
-multica issue list --status in\\\_review --full-id
-multica issue list --assignee "agent:AstrBot-运维" --output json
-```
-
-**CLI 特有优势**
-
-* 支持管道和脚本：`multica issue list --output json | jq '.\\\[].id'`
-* 可批量筛选（按状态、负责人、优先级等）
-* 可集成到自动化工作流
-
-
-
-**快速对照**
-
-|操作|Web 界面|CLI 本地终端|
-|-|-|-|
-|当前工作区 UUID|`multica workspace get --output json`|同左|
-|所有工作区 UUID|`multica workspace list --full-id`|同左|
-|单个 Issue UUID|`multica issue get <id> --output json`|同左|
-|所有 Issue UUID|`multica issue list --full-id`|同左|
-|管道/脚本处理|不支持|支持 `jq` 等|
-|登录方式|浏览器已登录|需 `multica login`|
-
-> \\\*\\\*核心命令完全一致\\\*\\\*——Web 界面和 CLI 使用相同的 `multica` 命令语法，区别仅在于运行环境和后续处理能力。
-
-
-
-
-
-
-> 更多细节请参考 Multica 官方文档：
-> - [快速上手](https://multica.ai/docs/zh/cloud-quickstart)
-> - [认证与令牌](https://multica.ai/docs/zh/auth-tokens)
+更多细节请参考 Multica 官方文档：
+- [快速上手](https://multica.ai/docs/zh/cloud-quickstart)
+- [认证与令牌](https://multica.ai/docs/zh/auth-tokens)
 
 ---
 
@@ -238,21 +138,27 @@ multica issue list --assignee "agent:AstrBot-运维" --output json
 | `/multica status` | 检查 Multica 连接状态 |
 | `/multica issue create <标题> [--desc 描述]` | 通过 API 新建 Issue（不依赖本机 CLI） |
 | `/multica workspace list` | 列出当前 Token 可访问的所有工作区 |
-| `/multica workspace select <id-slug>` | 切换当前工作区（持久化到插件 config.json，重启后仍生效） |
-| `/multica workspace create <名称> [--slug slug] [--desc 描述]` | 创建工作区（slug 缺省时按名称自动生成） |
+| `/multica workspace select <id\|slug>` | 切换当前工作区（持久化到插件 config.json，重启后仍生效） |
+| `/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景]` | 创建工作区（slug 缺省时按名称自动生成） |
 | `/multica project list` | 列出当前工作区下的所有项目（标题、id） |
 | `/multica project select <id>` | 切换当前项目（持久化到插件 config.json，重启后仍生效；新建 Issue 默认进入所选项目） |
 | `/multica project create <标题> [--desc 描述]` | 创建项目（title 必填，可选描述） |
 | `/multica inbox [数量] [open\|done]` | 查看收件箱：最近 Issue（默认 10 条，按更新时间倒序）；`open` 只看未完成，`done` 只看已完成/已取消 |
 
 > 提示：`/multica issue create` 直接调用 Multica HTTP API 创建 Issue，
-> 不依赖本机是否安装 `multica` CLI、也不要求 CLI 加入 PATH，
-> 可避免“本机未安装 multica”这类误报。
+> 不依赖本机是否安装 Multica CLI、也不要求 CLI 加入 PATH，
+> 可避免“本机未安装 Multica”这类误报。
 
 > 提示：`/multica inbox` 同样直接调用 Multica HTTP API（`GET /api/issues`），
 > 每条包含状态图标、编号、标题、优先级与指派人，列表紧凑避免刷屏。
 
 指令受会话过滤配置（黑白名单）控制。
+
+### 🔐 管理员权限
+
+`/multica` 通过 AstrBot 标准的指令注册方式挂载，属于 AstrBot 的**一等指令**。
+你可以在 **AstrBot WebUI → 指令管理** 中找到 `/multica`，并一键将其设为
+**仅管理员** 或 **成员可**，实现 ChatOps 指令的权限回收。
 
 ---
 

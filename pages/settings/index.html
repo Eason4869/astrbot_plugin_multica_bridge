@@ -6,298 +6,397 @@
   <title>Multica 桥接设置</title>
   <style>
     :root {
-      --bg: #f5f5f5;
-      --card-bg: #fff;
-      --text: #333;
-      --text-muted: #888;
-      --border: #e0e0e0;
-      --accent: #4f46e5;
-      --accent-hover: #4338ca;
-      --danger: #dc2626;
-      --danger-hover: #b91c1c;
-      --input-bg: #fafafa;
-      --radius: 8px;
-      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --brand-1: #6366f1;
+      --brand-2: #8b5cf6;
+      --brand-3: #22d3ee;
+      --bg: #f4f5fb;
+      --bg-soft: #eceef8;
+      --card-bg: #ffffff;
+      --text: #2b2d42;
+      --text-muted: #7a7d94;
+      --border: #e4e6f0;
+      --input-bg: #f7f8fc;
+      --accent: #5b5fee;
+      --accent-hover: #4b4fd6;
+      --danger: #e5484d;
+      --ok: #12a150;
+      --warn: #f0a020;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow-sm: 0 1px 2px rgba(30, 34, 74, 0.06), 0 1px 3px rgba(30, 34, 74, 0.05);
+      --shadow-md: 0 6px 24px -8px rgba(30, 34, 74, 0.18);
+      --shadow-lg: 0 20px 50px -24px rgba(30, 34, 74, 0.28);
     }
     .dark {
-      --bg: #1a1a2e;
-      --card-bg: #22223b;
-      --text: #e0e0e0;
-      --text-muted: #999;
-      --border: #333;
-      --input-bg: #2a2a40;
-      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --bg: #101221;
+      --bg-soft: #171a2e;
+      --card-bg: #1c1f35;
+      --text: #e7e8f4;
+      --text-muted: #9093b0;
+      --border: #2b2f4b;
+      --input-bg: #232639;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 22px 55px -26px rgba(0, 0, 0, 0.65);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC",
+        "Microsoft YaHei", sans-serif;
       background: var(--bg);
       color: var(--text);
-      padding: 24px 20px;
-      line-height: 1.6;
-      transition: background 0.2s, color 0.2s;
+      min-height: 100vh;
+      transition: background 0.25s, color 0.25s;
     }
-    .container { max-width: 640px; margin: 0 auto; }
-    h1 {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 4px;
+    /* Warm page gradient */
+    .page-bg {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(720px 360px at 12% -6%, rgba(99, 102, 241, 0.16), transparent 60%),
+        radial-gradient(680px 340px at 96% 4%, rgba(139, 92, 246, 0.14), transparent 60%),
+        radial-gradient(560px 320px at 50% 108%, rgba(34, 211, 238, 0.10), transparent 60%),
+        var(--bg);
     }
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 13px;
-      margin-bottom: 24px;
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: 760px; margin: 0 auto; padding: 34px 20px 60px; }
+
+    /* ── Hero ── */
+    .hero {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 8px;
     }
+    .hero-logo {
+      width: 60px; height: 60px; flex-shrink: 0; border-radius: 18px;
+      display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+      color: #fff; font-weight: 800; font-size: 26px;
+      box-shadow: 0 10px 24px -10px rgba(99, 102, 241, 0.7);
+      position: relative;
+    }
+    .hero-logo::after {
+      content: ""; position: absolute; inset: -6px; z-index: -1;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(99,102,241,.35), rgba(34,211,238,.25));
+      filter: blur(14px);
+    }
+    .hero-title { font-size: 24px; font-weight: 800; letter-spacing: .3px; }
+    .hero-sub { color: var(--text-muted); font-size: 13.5px; margin-top: 4px; }
+
+    /* ── Card ── */
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 20px 24px;
-      margin-bottom: 16px;
-      box-shadow: var(--shadow);
+      padding: 22px 24px;
+      margin-top: 18px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow .2s, transform .2s, border-color .2s;
+      animation: rise .4s ease both;
     }
-    .card h2 {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 16px;
+    .card:hover { box-shadow: var(--shadow-md); }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .card-head .ic {
+      width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+      display: grid; place-items: center; font-size: 15px; color: #fff;
     }
-    .field {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 0;
-    }
-    .field + .field { border-top: 1px solid var(--border); }
-    .field-label { font-size: 14px; }
-    .field-hint {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-    .field-control {
-      flex-shrink: 0;
-      margin-left: 16px;
-    }
-    input[type="text"], input[type="number"], select {
+    .ic-blue { background: linear-gradient(135deg, #4f8cff, #6366f1); }
+    .ic-violet { background: linear-gradient(135deg, #8b5cf6, #d946ef); }
+    .ic-cyan { background: linear-gradient(135deg, #06b6d4, #0ea5e9); }
+    .ic-amber { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+    .card h2 { font-size: 15.5px; font-weight: 700; }
+    .card-desc { color: var(--text-muted); font-size: 13px; margin-top: 1px; }
+
+    .field { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; }
+    .field + .field { border-top: 1px dashed var(--border); }
+    .field-label { font-size: 14px; font-weight: 600; }
+    .field-hint { font-size: 12.3px; color: var(--text-muted); margin-top: 4px; }
+    .field-control { flex-shrink: 0; margin-left: 8px; }
+
+    /* ── Inputs ── */
+    input[type="text"], input[type="password"], textarea, select {
       background: var(--input-bg);
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 13px;
-      width: 220px;
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-size: 13.5px;
+      width: 240px;
       outline: none;
-      transition: border 0.15s;
-    }
-    input:focus, select:focus { border-color: var(--accent); }
-    input[type="number"] { width: 100px; }
-
-    /* Toggle switch */
-    .switch { position: relative; display: inline-block; width: 42px; height: 24px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #ccc; border-radius: 24px;
-      transition: background 0.2s;
-    }
-    .slider::before {
-      content: ""; position: absolute;
-      height: 18px; width: 18px;
-      left: 3px; bottom: 3px;
-      background: #fff; border-radius: 50%;
-      transition: transform 0.2s;
-    }
-    input:checked + .slider { background: var(--accent); }
-    input:checked + .slider::before { transform: translateX(18px); }
-
-    .btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 16px; font-size: 13px; font-weight: 500;
-      border: 1px solid var(--border); border-radius: 6px;
-      background: var(--card-bg); color: var(--text);
-      cursor: pointer; transition: all 0.15s;
-    }
-    .btn:hover { border-color: var(--accent); color: var(--accent); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .btn-primary:hover { background: var(--accent-hover); color: #fff; }
-    .btn-danger { color: var(--danger); border-color: var(--danger); }
-    .btn-danger:hover { background: var(--danger); color: #fff; }
-    .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
-
-    .toast {
-      position: fixed; bottom: 24px; right: 24px;
-      padding: 10px 18px; border-radius: 8px;
-      font-size: 13px; z-index: 999;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-      transition: opacity 0.3s;
-    }
-    .toast-ok  { background: #16a34a; color: #fff; }
-    .toast-err { background: #dc2626; color: #fff; }
-    .toast-info { background: var(--accent); color: #fff; }
-
-    .msg { font-size: 13px; color: var(--text-muted); white-space: pre-wrap; }
-    .status-dot {
-      display: inline-block; width: 8px; height: 8px;
-      border-radius: 50%; margin-right: 6px;
-    }
-    .status-ok { background: #16a34a; }
-    .status-err { background: #dc2626; }
-
-    /* 会话过滤列表 textarea */
-    .filter-list-textarea {
-      width: 100%;
-      background: var(--input-bg);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 13px;
-      outline: none;
-      resize: vertical;
+      transition: border-color .15s, box-shadow .15s;
       font-family: inherit;
     }
-    .filter-list-textarea:focus { border-color: var(--accent); }
-    .filter-field { flex-direction: column; align-items: flex-start; }
-    .filter-field .field-control { margin-left: 0; }
-    code {
-      background: var(--input-bg);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-family: Consolas, "Courier New", monospace;
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: .8; }
+    .mono { font-family: ui-monospace, "SF Mono", Consolas, "Courier New", monospace; }
+    textarea.filter-list-textarea {
+      width: 100%; resize: vertical;
+      font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 12.5px;
+      line-height: 1.7; min-height: 64px;
+    }
+    .narrow { width: 120px !important; }
+
+    /* ── Toggle switch ── */
+    .switch { position: relative; display: inline-block; width: 44px; height: 25px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: #cfd3e3; border-radius: 25px; transition: background .2s;
+    }
+    .dark .slider { background: #3a3e5c; }
+    .slider::before {
+      content: ""; position: absolute; height: 19px; width: 19px;
+      left: 3px; bottom: 3px; background: #fff; border-radius: 50%;
+      transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    }
+    input:checked + .slider { background: linear-gradient(90deg, var(--brand-1), var(--brand-2)); }
+    input:checked + .slider::before { transform: translateX(19px); }
+
+    /* ── Filter rows ── */
+    .filter-head {
+      display: flex; align-items: center; justify-content: space-between; width: 100%;
+    }
+    .filter-block { width: 100%; }
+    .filter-block .field-hint { margin-bottom: 8px; }
+
+    /* ── Buttons / chips ── */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; font-size: 13.5px; font-weight: 600;
+      border: 1px solid var(--border); border-radius: 11px;
+      background: var(--card-bg); color: var(--text);
+      cursor: pointer; transition: all .15s;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .btn-primary {
+      background: linear-gradient(120deg, var(--brand-1), var(--brand-2));
+      color: #fff; border: none;
+      box-shadow: 0 8px 20px -10px rgba(99, 102, 241, .8);
+    }
+    .btn-primary:hover { opacity: .94; }
+    .btn-outline { background: transparent; }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    .msg { font-size: 13px; white-space: pre-wrap; }
+    .status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+    .status-ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(18,161,80,.18); }
+    .status-err { background: var(--danger); box-shadow: 0 0 0 3px rgba(229,72,77,.18); }
+    .pill {
+      display: inline-block; padding: 2px 9px; border-radius: 999px;
+      font-size: 11.5px; font-weight: 600; border: 1px solid var(--border);
+      background: var(--bg-soft); color: var(--text-muted);
+    }
+
+    /* ── Command table ── */
     .cmd-table { width: 100%; font-size: 13px; border-collapse: collapse; }
-    .cmd-table td { padding: 5px 8px 5px 0; vertical-align: top; }
+    .cmd-table tr { border-bottom: 1px dashed var(--border); }
+    .cmd-table tr:last-child { border-bottom: none; }
+    .cmd-table td { padding: 9px 10px 9px 0; vertical-align: top; }
     .cmd-table td:first-child { white-space: nowrap; }
-    .cmd-table td:last-child { color: var(--text-muted); }
+    .cmd-table td:last-child { color: var(--text-muted); font-size: 12.6px; }
+    code.cmd {
+      background: var(--bg-soft); padding: 2px 7px; border-radius: 6px;
+      font-size: 12px; color: var(--text); font-weight: 600;
+      font-family: ui-monospace, Consolas, "Courier New", monospace;
+    }
+
+    .note {
+      margin-top: 14px; padding: 11px 14px; border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(34,211,238,.06));
+      border: 1px solid rgba(99,102,241,.25);
+      font-size: 12.4px; color: var(--text-muted); line-height: 1.7;
+    }
+    .note b { color: var(--text); }
+
+    .footer { text-align: center; margin-top: 26px; color: var(--text-muted); font-size: 12px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(20px);
+      padding: 12px 22px; border-radius: 13px; font-size: 13.5px; z-index: 999;
+      box-shadow: var(--shadow-lg); color: #fff; font-weight: 600;
+      opacity: 0; pointer-events: none;
+      transition: opacity .3s, transform .3s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+    .toast-ok  { background: linear-gradient(120deg, #16a34a, #22c55e); }
+    .toast-err { background: linear-gradient(120deg, #dc2626, #ef4444); }
+    .toast-info { background: linear-gradient(120deg, #6366f1, #8b5cf6); }
+
+    h2 { line-height: 1.3; }
+    .subtitle-line { color: var(--text-muted); font-size: 13.5px; margin-top: 6px; margin-bottom: 6px; }
   </style>
 </head>
 <body>
+  <div class="page-bg"></div>
   <div class="container">
-    <h1>Multica 桥接设置</h1>
-    <p class="subtitle">配置 Multica 平台连接参数，修改后自动保存热生效</p>
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-logo">M</div>
+      <div>
+        <div class="hero-title">Multica 桥接设置</div>
+        <div class="hero-sub">AstrBot × Multica · 连接参数与会话过滤 · 修改后自动保存热生效</div>
+      </div>
+    </div>
 
     <!-- Connection Settings -->
-    <div class="card">
-      <h2>连接配置</h2>
+    <section class="card">
+      <div class="card-head">
+        <span class="ic ic-blue">⚙️</span>
+        <div>
+          <h2>连接配置</h2>
+          <div class="card-desc">Multica API 连通参数与目标工作区/项目</div>
+        </div>
+      </div>
+
       <div class="field">
         <div>
           <div class="field-label">启用 Multica 桥接</div>
-          <div class="field-hint">关闭后插件完全停止</div>
+          <div class="field-hint">关闭后插件将完全停止响应</div>
         </div>
         <label class="switch field-control">
           <input type="checkbox" id="field-enabled" />
           <span class="slider"></span>
         </label>
       </div>
+
       <div class="field">
         <div>
-          <div class="field-label">Multica API 地址</div>
-          <div class="field-hint">例如 http://your-server:8080</div>
+          <div class="field-label">API 地址</div>
+          <div class="field-hint">Cloud 模式默认 <code class="cmd">https://multica.ai</code>，自托管填服务器地址</div>
         </div>
-        <input type="text" id="field-api_url" class="field-control" placeholder="https://multica.ai" />
+        <input type="text" id="field-api_url" class="field-control mono" placeholder="https://multica.ai" />
       </div>
+
       <div class="field">
         <div>
           <div class="field-label">认证 Token</div>
-          <div class="field-hint">Multica 平台的 API 认证 Token</div>
+          <div class="field-hint">Multica 控制台生成，保存时已脱敏安全处理</div>
         </div>
-        <input type="text" id="field-token" class="field-control" placeholder="输入 Token" />
+        <input type="password" id="field-token" class="field-control" placeholder="输入 Token" autocomplete="off" />
       </div>
+
       <div class="field">
         <div>
-          <div class="field-label">工作区 ID</div>
-          <div class="field-hint">可选，留空自动从 API 获取（推荐只填上面两项即可）</div>
+          <div class="field-label">工作区 ID <span class="pill">可选</span></div>
+          <div class="field-hint">留空自动从 API 获取，通常无需填写</div>
         </div>
-        <input type="text" id="field-workspace_id" class="field-control" placeholder="留空自动获取" />
+        <input type="text" id="field-workspace_id" class="field-control mono" placeholder="留空自动获取" />
       </div>
+
       <div class="field">
         <div>
-          <div class="field-label">项目 ID</div>
-          <div class="field-hint">可选，指定后数据关联到特定项目</div>
+          <div class="field-label">项目 ID <span class="pill">可选</span></div>
+          <div class="field-hint">指定后新建 Issue 默认进入该项目</div>
         </div>
-        <input type="text" id="field-project_id" class="field-control" placeholder="UUID（可选）" />
+        <input type="text" id="field-project_id" class="field-control mono" placeholder="UUID（可选）" />
       </div>
-    </div>
+    </section>
 
     <!-- Chat Filter Settings -->
-    <div class="card">
-      <h2>会话过滤</h2>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-        控制插件在哪些群聊/私聊中生效，支持黑名单、白名单和关闭三种模式。
-      </p>
-      <div class="field filter-field">
-        <div style="width:100%;display:flex;align-items:center;justify-content:space-between;">
+    <section class="card">
+      <div class="card-head">
+        <span class="ic ic-violet">🛡️</span>
+        <div>
+          <h2>会话过滤</h2>
+          <div class="card-desc">控制插件在哪些群聊 / 私聊中生效</div>
+        </div>
+      </div>
+
+      <div class="field filter-block">
+        <div class="filter-head">
           <div>
             <div class="field-label">群聊过滤模式</div>
-            <div class="field-hint">黑名单：排除指定群 / 白名单：仅指定群可用 / 关闭：不限制</div>
+            <div class="field-hint">黑名单：排除指定群 · 白名单：仅指定群可用 · 关闭：不限制</div>
           </div>
-          <select id="field-group_chat_mode" class="field-control" style="width:120px;">
+          <select id="field-group_chat_mode" class="field-control narrow">
             <option value="blacklist">黑名单</option>
             <option value="whitelist">白名单</option>
             <option value="disabled">关闭</option>
           </select>
         </div>
-        <div style="margin-top:10px;width:100%;">
-          <div class="field-hint" style="margin-bottom:4px;">群聊 ID 列表（每行一个）</div>
+        <div class="filter-block">
+          <div class="field-hint">群聊 ID 列表（每行一个）</div>
           <textarea id="field-group_chat_list" class="filter-list-textarea" rows="3" placeholder="123456789&#10;987654321"></textarea>
         </div>
       </div>
-      <div class="field filter-field">
-        <div style="width:100%;display:flex;align-items:center;justify-content:space-between;">
+
+      <div class="field filter-block" style="border-top:1px dashed var(--border);">
+        <div class="filter-head">
           <div>
             <div class="field-label">私聊过滤模式</div>
-            <div class="field-hint">黑名单：排除指定用户 / 白名单：仅指定用户可用 / 关闭：不限制</div>
+            <div class="field-hint">黑名单：排除指定用户 · 白名单：仅指定用户可用 · 关闭：不限制</div>
           </div>
-          <select id="field-private_chat_mode" class="field-control" style="width:120px;">
+          <select id="field-private_chat_mode" class="field-control narrow">
             <option value="blacklist">黑名单</option>
             <option value="whitelist">白名单</option>
             <option value="disabled">关闭</option>
           </select>
         </div>
-        <div style="margin-top:10px;width:100%;">
-          <div class="field-hint" style="margin-bottom:4px;">用户 ID 列表（每行一个）</div>
+        <div class="filter-block">
+          <div class="field-hint">用户 ID 列表（每行一个）</div>
           <textarea id="field-private_chat_list" class="filter-list-textarea" rows="3" placeholder="123456789&#10;987654321"></textarea>
         </div>
       </div>
-    </div>
+
+      <div class="note">
+        💡 权限提醒：可在 AstrBot「指令管理」中将本插件主指令 <b>/multica</b> 设为
+        <b>仅管理员</b>，实现 ChatOps 指令的权限回收。
+      </div>
+    </section>
 
     <!-- Commands -->
-    <div class="card">
-      <h2>指令说明</h2>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-        在允许的群聊/私聊中发送以下指令即可操作 Multica：
-      </p>
+    <section class="card">
+      <div class="card-head">
+        <span class="ic ic-cyan">💬</span>
+        <div>
+          <h2>指令说明</h2>
+          <div class="card-desc">在允许的群聊 / 私聊中发送以下指令操作 Multica</div>
+        </div>
+      </div>
       <table class="cmd-table">
-        <tr><td><code>/multica help</code></td><td>显示帮助信息</td></tr>
-        <tr><td><code>/multica status</code></td><td>检查 Multica 连接状态</td></tr>
-        <tr><td><code>/multica issue create &lt;标题&gt; [--desc 描述]</code></td><td>通过 API 新建 Issue（不依赖本机 CLI）</td></tr>
-        <tr><td><code>/multica workspace list</code></td><td>列出当前 Token 可访问的工作区</td></tr>
-        <tr><td><code>/multica workspace select &lt;id|slug&gt;</code></td><td>切换当前工作区（持久化保存）</td></tr>
-        <tr><td><code>/multica workspace create &lt;名称&gt; [--slug slug] [--desc 描述]</code></td><td>创建工作区</td></tr>
-        <tr><td><code>/multica project list</code></td><td>列出当前工作区的项目</td></tr>
-        <tr><td><code>/multica project select &lt;id&gt;</code></td><td>切换当前项目（持久化保存，新建 Issue 默认进入所选项目）</td></tr>
-        <tr><td><code>/multica project create &lt;标题&gt; [--desc 描述]</code></td><td>创建项目</td></tr>
-        <tr><td><code>/multica inbox [数量] [open|done]</code></td><td>查看收件箱：最近 Issue 及进展（可指定条数、只看未完成/已完成）</td></tr>
+        <tr><td><code class="cmd">/multica help</code></td><td>显示帮助信息</td></tr>
+        <tr><td><code class="cmd">/multica status</code></td><td>检查连接与 Token 状态</td></tr>
+        <tr><td><code class="cmd">/multica issue create &lt;标题&gt; [--desc 描述]</code></td><td>新建 Issue（不依赖本机 CLI）</td></tr>
+        <tr><td><code class="cmd">/multica workspace list</code></td><td>列出可访问的工作区</td></tr>
+        <tr><td><code class="cmd">/multica workspace select &lt;id|slug&gt;</code></td><td>切换当前工作区（持久化）</td></tr>
+        <tr><td><code class="cmd">/multica workspace create &lt;名称&gt; [--slug ..] [--desc ..]</code></td><td>创建工作区</td></tr>
+        <tr><td><code class="cmd">/multica project list</code></td><td>列出当前工作区的项目</td></tr>
+        <tr><td><code class="cmd">/multica project select &lt;id&gt;</code></td><td>切换当前项目（持久化），新建 Issue 默认进入所选项目</td></tr>
+        <tr><td><code class="cmd">/multica project create &lt;标题&gt; [--desc ..]</code></td><td>创建项目</td></tr>
+        <tr><td><code class="cmd">/multica inbox [数量] [open|done]</code></td><td>收件箱：最近 Issue 及进展（可只看未完成/已完成）</td></tr>
       </table>
-    </div>
+    </section>
 
     <!-- Actions -->
-    <div class="card">
-      <h2>连接测试</h2>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-        测试 Multica API 连通性与 Token 有效性。
-      </p>
+    <section class="card">
+      <div class="card-head">
+        <span class="ic ic-amber">🔌</span>
+        <div>
+          <h2>连接测试</h2>
+          <div class="card-desc">验证 Multica API 连通性与 Token 有效性</div>
+        </div>
+      </div>
       <div class="btn-row">
-        <button class="btn btn-primary" id="btn-test">测试连接</button>
+        <button class="btn btn-primary" id="btn-test">🔌 测试连接</button>
         <span class="msg" id="test-result"></span>
       </div>
-    </div>
+    </section>
+
+    <div class="footer">AstrBot Multica 桥接插件 · 所有修改即时保存并热生效</div>
   </div>
 
-  <div class="toast" id="toast" style="opacity:0;pointer-events:none;"></div>
+  <div class="toast" id="toast"><span class="toast-emoji"></span><span class="toast-msg"></span></div>
 
   <script>
     (function () {
@@ -308,7 +407,6 @@
       const SELECTS = new Set(['group_chat_mode', 'private_chat_mode']);
 
       let cfg = {};
-      let bridgeReady = false;
       let bridge = null;
       let saveTimer = null;
       let tokenChanged = false;  // 追踪 token 是否被用户手动修改
@@ -357,18 +455,18 @@
       }
 
       // ── Toast ──
+      const EMOJIS = { 'toast-ok': '✅', 'toast-err': '⚠️', 'toast-info': '💡' };
       let toastTimer = null;
       function showToast(msg, cls) {
         const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.className = 'toast ' + (cls || 'toast-info');
-        t.style.opacity = '1';
-        t.style.pointerEvents = 'auto';
+        const clsName = cls || 'toast-info';
+        t.className = 'toast ' + clsName + ' show';
+        t.querySelector('.toast-msg').textContent = msg;
+        t.querySelector('.toast-emoji').textContent = EMOJIS[clsName] || '';
         if (toastTimer) clearTimeout(toastTimer);
         toastTimer = setTimeout(function () {
-          t.style.opacity = '0';
-          t.style.pointerEvents = 'none';
-        }, 2500);
+          t.classList.remove('show');
+        }, 2600);
       }
 
       // ── Load Config ──
@@ -381,7 +479,7 @@
           const data = await apiGet('config');
           cfg = data || {};
           FIELDS.forEach(function (k) {
-            var el = document.getElementById('field-' + k);
+            const el = document.getElementById('field-' + k);
             if (!el) return;
             if (BOOLS.has(k)) {
               el.checked = !!cfg[k];
@@ -406,7 +504,6 @@
 
       async function doSave() {
         try {
-          // 若 token 未被用户修改过，不将其包含在保存请求中，防止覆盖真实 token
           var payload = {};
           for (var key in cfg) {
             if (cfg.hasOwnProperty(key)) {
@@ -415,7 +512,7 @@
             }
           }
           await apiPost('actions/save_config', payload);
-          showToast('已保存', 'toast-ok');
+          showToast('配置已保存', 'toast-ok');
         } catch (e) {
           showToast('保存失败：' + e.message, 'toast-err');
         }
@@ -429,25 +526,19 @@
       // ── Bind Fields ──
       function bindFields() {
         FIELDS.forEach(function (k) {
-          var el = document.getElementById('field-' + k);
+          const el = document.getElementById('field-' + k);
           if (!el) return;
           if (BOOLS.has(k)) {
-            el.addEventListener('change', function () {
-              setField(k, el.checked);
-            });
+            el.addEventListener('change', function () { setField(k, el.checked); });
           } else if (SELECTS.has(k)) {
-            el.addEventListener('change', function () {
-              setField(k, el.value);
-            });
+            el.addEventListener('change', function () { setField(k, el.value); });
           } else if (LISTS.has(k)) {
             el.addEventListener('input', function () {
               var lines = el.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
               setField(k, lines);
             });
           } else if (el.type === 'number') {
-            el.addEventListener('input', function () {
-              setField(k, parseInt(el.value, 10) || 0);
-            });
+            el.addEventListener('input', function () { setField(k, parseInt(el.value, 10) || 0); });
           } else {
             el.addEventListener('input', function () {
               if (k === 'token') tokenChanged = true;
@@ -459,15 +550,16 @@
 
       // ── Test Connection ──
       async function testConnection() {
-        var btn = document.getElementById('btn-test');
-        var result = document.getElementById('test-result');
+        const btn = document.getElementById('btn-test');
+        const result = document.getElementById('test-result');
         btn.disabled = true;
-        btn.textContent = '测试中…';
+        btn.textContent = '⏳ 测试中…';
         result.textContent = '';
         try {
-          var r = await apiPost('actions/test_connection');
+          const r = await apiPost('actions/test_connection');
           if (r.ok) {
-            result.innerHTML = '<span class="status-dot status-ok"></span>连接成功' + (r.workspace_name ? ' — ' + r.workspace_name : '');
+            result.innerHTML = '<span class="status-dot status-ok"></span><b>连接成功</b>' +
+              (r.workspace_name ? ' — 工作区：' + r.workspace_name : '');
           } else {
             result.innerHTML = '<span class="status-dot status-err"></span>' + r.message;
           }
@@ -475,7 +567,7 @@
           result.innerHTML = '<span class="status-dot status-err"></span>' + e.message;
         } finally {
           btn.disabled = false;
-          btn.textContent = '测试连接';
+          btn.textContent = '🔌 测试连接';
         }
       }
 
@@ -483,11 +575,9 @@
       async function init() {
         bridge = getBridge();
         if (!bridge) {
-          // Retry
           setTimeout(init, 300);
           return;
         }
-        bridgeReady = true;
         watchTheme();
         bindFields();
         await loadConfig();

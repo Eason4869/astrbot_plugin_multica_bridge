@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from astrbot import logger
-from astrbot.api.event import AstrMessageEvent, MessageChain
+from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star
 from astrbot.core.message.components import Plain
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
@@ -75,31 +75,6 @@ class Main(WebApiMixin, Star):
         except Exception as e:
             logger.warning("[multica_bridge] Web API 注册失败: %s", e)
 
-        # 注册命令监听（兼容 AstrBot v4.27.2+，使用 StarHandler 体系）
-        try:
-            from astrbot.core.star.star_handler import (
-                EventType,
-                StarHandlerMetadata,
-                star_handlers_registry,
-            )
-            from astrbot.core.star.filter.command import CommandFilter
-
-            handler_md = StarHandlerMetadata(
-                event_type=EventType.AdapterMessageEvent,
-                handler_full_name=f"{self._on_command.__module__}_{self._on_command.__name__}",
-                handler_name="_on_command",
-                handler_module_path=self._on_command.__module__,
-                handler=self._on_command,
-                event_filters=[],
-                desc="Multica 桥接指令处理",
-            )
-            handler_md.event_filters.append(
-                CommandFilter(command_name="multica", handler_md=handler_md)
-            )
-            star_handlers_registry.append(handler_md)
-        except Exception as e:
-            logger.warning("[multica_bridge] 命令监听注册失败: %s", e)
-
     # ── 命令处理 ──
 
     @staticmethod
@@ -117,16 +92,22 @@ class Main(WebApiMixin, Star):
     def _is_group_chat(event: AstrMessageEvent) -> bool:
         return not event.is_private_chat()
 
+    @filter.command("multica")
     async def _on_command(self, event: AstrMessageEvent) -> None:
         """处理 /multica 开头的命令。
 
-        通过 StarHandlerMetadata + CommandFilter 注册，确保在 LLM 之前拦截消息。
+        通过 AstrBot 标准的 ``@command`` 装饰器在类定义阶段完成注册，
+        使该指令在 AstrBot 指令管理中被视为一等指令（可设为「仅管理员」等权限）。
         """
+        await self._dispatch_multica(event)
+
+    async def _dispatch_multica(self, event: AstrMessageEvent) -> None:
+        """执行实际的 /multica 子命令分发逻辑。"""
         try:
             text = (event.message_str or "").strip()
 
-            # CommandFilter 只剥离 / 前缀，text 实际为 "multica <args>"
-            # 同时兼容直接调用时保留 /multica 前缀的旧路径
+            # AstrBot 的指令管道可能剥离唤醒前缀（如 "/"），但为了保证健壮性，
+            # 这里兼容 message_str 同时带有 /multica 或 multica 前缀的情况。
             if text.startswith("/multica"):
                 text = text[len("/multica"):].strip()
             elif text.startswith("multica"):
@@ -175,7 +156,7 @@ class Main(WebApiMixin, Star):
             "/multica issue create <标题> [--desc 描述] — 新建 Issue\n"
             "/multica workspace list — 列出可访问的工作区\n"
             "/multica workspace select <id|slug> — 切换当前工作区（持久化）\n"
-            "/multica workspace create <名称> [--slug slug] [--desc 描述] — 创建工作区\n"
+            "/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景信息] — 创建工作区\n"
             "/multica project list — 列出当前工作区的项目\n"
             "/multica project select <id> — 切换当前项目（持久化）\n"
             "/multica project create <标题> [--desc 描述] — 创建项目\n"
@@ -250,7 +231,7 @@ class Main(WebApiMixin, Star):
                 "用法：\n"
                 "/multica workspace list\n"
                 "/multica workspace select <id|slug>\n"
-                "/multica workspace create <名称> [--slug slug] [--desc 描述]",
+                "/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景信息]",
             )
 
     async def _cmd_workspace_list(self, event: AstrMessageEvent) -> None:
@@ -326,7 +307,7 @@ class Main(WebApiMixin, Star):
         if not parts:
             await self._reply(
                 event,
-                "用法：/multica workspace create <名称> [--slug slug] [--desc 描述]\n"
+                "用法：/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景信息]\n"
                 "示例：/multica workspace create 项目A --slug project-a --desc 测试环境",
             )
             return
