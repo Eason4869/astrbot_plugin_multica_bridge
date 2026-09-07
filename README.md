@@ -1,6 +1,6 @@
 <div align="center">
 
-![:name](https://count.getloli.com/@astrbot_plugin_media_kit?name=astrbot_plugin_media_kit&theme=minecraft&padding=6&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
+![:name](https://count.getloli.com/@astrbot_plugin_multica_bridge?name=astrbot_plugin_multica_bridge&theme=minecraft&padding=6&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
 
 
 <p align="center">
