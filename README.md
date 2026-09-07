@@ -1,3 +1,8 @@
+<div align="center">
+
+![:name](https://count.getloli.com/@astrbot_plugin_media_kit?name=astrbot_plugin_media_kit&theme=minecraft&padding=6&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
+
+
 <p align="center">
   <img src="logo.svg" width="110" height="110" alt="Multica Bridge Logo" />
 </p>
