@@ -1,0 +1,13 @@
+[tool.ruff]
+target-version = "py310"
+# pages/ 是前端页面，.astrbot-plugin/ 是 i18n 资源，均不参与 Python 检查
+extend-exclude = ["pages", ".astrbot-plugin"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+# 行宽交给格式化器，不做硬性检查
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

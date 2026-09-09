@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import re
+import time
 from typing import Any
 from urllib.parse import urlencode, urljoin
 
@@ -16,10 +17,25 @@ _UUID_RE = re.compile(
     re.IGNORECASE,
 )
 
+# 指派人名称缓存：{(api_url, workspace_id): (时间戳, {id: name})}。
+# 每条指令都会新建一个 MulticaClient，因此缓存必须放在模块级才有效。
+_ASSIGNEE_CACHE: dict[str, tuple[float, dict[str, str]]] = {}
+_ASSIGNEE_CACHE_TTL = 300.0
+
 
 def _is_uuid(value: str) -> bool:
     """判断字符串是否为 UUID 格式。"""
     return bool(_UUID_RE.match(value))
+
+
+def mask_secret(secret: str, keep: int = 4) -> str:
+    """脱敏敏感字符串：保留首尾各 ``keep`` 个字符。"""
+    s = str(secret or "")
+    if not s:
+        return "（未配置）"
+    if len(s) <= keep * 2:
+        return s[:2] + "****" if len(s) > 2 else "****"
+    return s[:keep] + "****" + s[-keep:]
 
 
 def get_multica_config(cfg: dict[str, Any] | None) -> dict[str, Any]:
@@ -89,7 +105,8 @@ class MulticaClient:
     async def test_connection(self) -> dict[str, Any]:
         """测试 Multica 连接是否正常。
 
-        成功时自动缓存 workspace_name，用户无需手动填写 workspace_id 配置项。
+        成功时自动缓存 workspace_name，用户无需手动填写 workspace_id 配置项；
+        同时返回当前工作区的 id/slug，便于 /multica status 展示。
         """
         result = await self.list_workspaces()
         if not result["ok"]:
@@ -97,11 +114,29 @@ class MulticaClient:
                 "ok": False,
                 "message": result["message"],
                 "workspace_name": None,
+                "workspace_id": None,
+                "workspace_slug": None,
             }
-        _ws, name, _wsid = self._pick_workspace(result["workspaces"])
+        ws, name, wsid = self._pick_workspace(result["workspaces"])
         if name:
             self._workspace_name = str(name)
-        return {"ok": True, "message": "连接成功", "workspace_name": name}
+        return {
+            "ok": True,
+            "message": "连接成功",
+            "workspace_name": name,
+            "workspace_id": wsid,
+            "workspace_slug": (ws or {}).get("slug"),
+        }
+
+    async def get_project_title(self, project_id: str) -> str:
+        """best-effort：按 id 解析项目标题（失败返回空串）。"""
+        if not project_id:
+            return ""
+        result = await self.list_projects()
+        if not result.get("ok"):
+            return ""
+        proj = self.find_project(project_id, result.get("projects") or [])
+        return str((proj or {}).get("title") or "")
 
     async def list_workspaces(self) -> dict[str, Any]:
         """获取当前 Token 可访问的所有工作区。
@@ -652,14 +687,38 @@ class MulticaClient:
         except Exception:
             return {}
 
-    async def resolve_assignee_names(self) -> dict[str, str]:
+    async def resolve_assignee_names(
+        self,
+        only_ids: set[str] | None = None,
+    ) -> dict[str, str]:
         """best-effort：把 assignee_id 解析为可读名称（智能体/团队/成员）。
 
         分别请求 agents/squads/members 列表并合并为 id -> name 映射；
         任何端点失败都会自动降级，不影响 inbox 主流程。
+        结果按 ``(api_url, workspace_id)`` 缓存 ``_ASSIGNEE_CACHE_TTL`` 秒，
+        避免每次收件箱查询都发起 3 个额外请求。
+
+        Args:
+            only_ids: 只返回这些 id 的映射（为 None 时返回全部）。
         """
         if not self._workspace_id:
             return {}
+
+        cache_key = f"{self._api_url}|{self._workspace_id}"
+        now = time.monotonic()
+        cached = _ASSIGNEE_CACHE.get(cache_key)
+        if cached and now - cached[0] < _ASSIGNEE_CACHE_TTL:
+            merged = cached[1]
+        else:
+            merged = await self._fetch_all_assignees()
+            _ASSIGNEE_CACHE[cache_key] = (now, merged)
+
+        if only_ids:
+            return {k: v for k, v in merged.items() if k in only_ids}
+        return dict(merged)
+
+    async def _fetch_all_assignees(self) -> dict[str, str]:
+        """并发拉取 agents/squads/members 并合并为 id -> name（失败降级为空）。"""
         try:
             import asyncio
 

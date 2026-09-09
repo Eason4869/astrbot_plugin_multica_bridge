@@ -1,0 +1,76 @@
+{
+  "metadata": {
+    "display_name": "Multica Bridge"
+  },
+  "pages": {
+    "settings": {
+      "title": "Multica Bridge Settings"
+    }
+  },
+  "settings": {
+    "title": "Multica Bridge Settings",
+    "subtitle": "AstrBot × Multica · connection & chat filters · saved and hot-reloaded automatically",
+    "optional": "optional",
+    "footer": "AstrBot Multica Bridge · every change is saved and applied immediately",
+    "conn": {
+      "title": "Connection",
+      "desc": "Multica API endpoint and target workspace / project",
+      "enabled": "Enable Multica bridge",
+      "enabledHint": "The plugin stops responding completely when disabled",
+      "apiUrl": "API base URL",
+      "apiUrlHint": "Cloud mode defaults to https://multica.ai; use your own server for self-hosting",
+      "token": "API token",
+      "tokenHint": "Generated in the Multica console; masked when returned to the UI",
+      "workspaceId": "Workspace ID",
+      "workspaceIdHint": "Leave empty to auto-resolve from the API (usually not needed)",
+      "projectId": "Project ID",
+      "projectIdHint": "New issues are created in this project by default"
+    },
+    "filter": {
+      "title": "Chat filters",
+      "desc": "Control which group / private chats the plugin responds in",
+      "groupMode": "Group chat mode",
+      "groupModeHint": "Blacklist: exclude listed groups · Whitelist: only listed groups · Off: no restriction",
+      "groupListHint": "Group IDs (one per line)",
+      "privateMode": "Private chat mode",
+      "privateModeHint": "Blacklist: exclude listed users · Whitelist: only listed users · Off: no restriction",
+      "privateListHint": "User IDs (one per line)",
+      "blacklist": "Blacklist",
+      "whitelist": "Whitelist",
+      "disabled": "Off"
+    },
+    "perm": {
+      "note": "💡 Tip: in AstrBot's Command Management you can set each command to \"admin only\" individually — e.g. restrict workspace create / project create to admins while leaving inbox open to members."
+    },
+    "cmd": {
+      "title": "Commands",
+      "desc": "Send these commands in any allowed group or private chat",
+      "tree": "Show the command tree",
+      "help": "Show help",
+      "status": "Check connection, current workspace and project",
+      "issue": "Create an issue (supports --desc/--priority/--status and more)",
+      "wsList": "List accessible workspaces",
+      "wsSelect": "Switch the current workspace (persisted)",
+      "wsCreate": "Create a workspace",
+      "projList": "List projects in the current workspace",
+      "projSelect": "Switch the current project (persisted)",
+      "projCreate": "Create a project",
+      "inbox": "Inbox: latest issues and progress"
+    },
+    "test": {
+      "title": "Connection test",
+      "desc": "Verify Multica API reachability and token validity",
+      "button": "🔌 Test connection",
+      "testing": "⏳ Testing…",
+      "ok": "Connected",
+      "workspace": "Workspace: "
+    },
+    "toast": {
+      "saved": "Configuration saved",
+      "loadFailed": "Failed to load configuration: ",
+      "saveFailed": "Failed to save: ",
+      "requestFailed": "Request failed",
+      "bridgeNotReady": "Bridge SDK is not ready"
+    }
+  }
+}

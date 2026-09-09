@@ -64,10 +64,35 @@ def save_plugin_config(data_dir: str, cfg: dict[str, Any]) -> None:
     os.replace(tmp, path)
 
 
+_TRUE_WORDS = {"1", "true", "yes", "y", "on", "是", "开", "启用"}
+_FALSE_WORDS = {"0", "false", "no", "n", "off", "否", "关", "停用"}
+
+
+def to_bool(value: Any, default: bool = False) -> bool:
+    """把常见写法安全地转成 bool。
+
+    注意：不能用 ``bool("false")``——非空字符串永远为 True。
+    无法识别时返回 ``default``。
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        token = value.strip().lower()
+        if token in _TRUE_WORDS:
+            return True
+        if token in _FALSE_WORDS:
+            return False
+    if value is None:
+        return default
+    return default
+
+
 def coerce_to_default_type(value: Any, default: Any) -> Any:
     """按 default 的类型强转 value。"""
     if isinstance(default, bool):
-        return bool(value)
+        return to_bool(value, default)
     if isinstance(default, int):
         try:
             return max(0, int(value))

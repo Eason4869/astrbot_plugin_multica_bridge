@@ -8,7 +8,6 @@
     :root {
       --brand-1: #6366f1;
       --brand-2: #8b5cf6;
-      --brand-3: #22d3ee;
       --bg: #f4f5fb;
       --bg-soft: #eceef8;
       --card-bg: #ffffff;
@@ -17,17 +16,16 @@
       --border: #e4e6f0;
       --input-bg: #f7f8fc;
       --accent: #5b5fee;
-      --accent-hover: #4b4fd6;
       --danger: #e5484d;
       --ok: #12a150;
-      --warn: #f0a020;
       --radius: 16px;
       --radius-sm: 10px;
       --shadow-sm: 0 1px 2px rgba(30, 34, 74, 0.06), 0 1px 3px rgba(30, 34, 74, 0.05);
       --shadow-md: 0 6px 24px -8px rgba(30, 34, 74, 0.18);
       --shadow-lg: 0 20px 50px -24px rgba(30, 34, 74, 0.28);
     }
-    .dark {
+    /* 暗色：AstrBot 会在 <html> 上写 data-theme，同时保留 .dark 兼容写法 */
+    .dark, [data-theme="dark"] {
       --bg: #101221;
       --bg-soft: #171a2e;
       --card-bg: #1c1f35;
@@ -48,7 +46,6 @@
       min-height: 100vh;
       transition: background 0.25s, color 0.25s;
     }
-    /* Warm page gradient */
     .page-bg {
       position: fixed; inset: 0; z-index: -1; pointer-events: none;
       background:
@@ -63,10 +60,7 @@
     .container { max-width: 760px; margin: 0 auto; padding: 34px 20px 60px; }
 
     /* ── Hero ── */
-    .hero {
-      display: flex; align-items: center; gap: 16px;
-      margin-bottom: 8px;
-    }
+    .hero { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
     .hero-logo {
       width: 60px; height: 60px; flex-shrink: 0; border-radius: 18px;
       display: grid; place-items: center;
@@ -92,7 +86,7 @@
       padding: 22px 24px;
       margin-top: 18px;
       box-shadow: var(--shadow-sm);
-      transition: box-shadow .2s, transform .2s, border-color .2s;
+      transition: box-shadow .2s, border-color .2s;
       animation: rise .4s ease both;
     }
     .card:hover { box-shadow: var(--shadow-md); }
@@ -107,7 +101,7 @@
     .ic-violet { background: linear-gradient(135deg, #8b5cf6, #d946ef); }
     .ic-cyan { background: linear-gradient(135deg, #06b6d4, #0ea5e9); }
     .ic-amber { background: linear-gradient(135deg, #f59e0b, #ef4444); }
-    .card h2 { font-size: 15.5px; font-weight: 700; }
+    .card h2 { font-size: 15.5px; font-weight: 700; line-height: 1.3; }
     .card-desc { color: var(--text-muted); font-size: 13px; margin-top: 1px; }
 
     .field { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; }
@@ -149,7 +143,7 @@
       position: absolute; cursor: pointer; inset: 0;
       background: #cfd3e3; border-radius: 25px; transition: background .2s;
     }
-    .dark .slider { background: #3a3e5c; }
+    .dark .slider, [data-theme="dark"] .slider { background: #3a3e5c; }
     .slider::before {
       content: ""; position: absolute; height: 19px; width: 19px;
       left: 3px; bottom: 3px; background: #fff; border-radius: 50%;
@@ -159,9 +153,7 @@
     input:checked + .slider::before { transform: translateX(19px); }
 
     /* ── Filter rows ── */
-    .filter-head {
-      display: flex; align-items: center; justify-content: space-between; width: 100%;
-    }
+    .filter-head { display: flex; align-items: center; justify-content: space-between; width: 100%; }
     .filter-block { width: 100%; }
     .filter-block .field-hint { margin-bottom: 8px; }
 
@@ -183,8 +175,6 @@
       box-shadow: 0 8px 20px -10px rgba(99, 102, 241, .8);
     }
     .btn-primary:hover { opacity: .94; }
-    .btn-outline { background: transparent; }
-    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
 
     .msg { font-size: 13px; white-space: pre-wrap; }
     .status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
@@ -232,9 +222,6 @@
     .toast-ok  { background: linear-gradient(120deg, #16a34a, #22c55e); }
     .toast-err { background: linear-gradient(120deg, #dc2626, #ef4444); }
     .toast-info { background: linear-gradient(120deg, #6366f1, #8b5cf6); }
-
-    h2 { line-height: 1.3; }
-    .subtitle-line { color: var(--text-muted); font-size: 13.5px; margin-top: 6px; margin-bottom: 6px; }
   </style>
 </head>
 <body>
@@ -244,8 +231,8 @@
     <div class="hero">
       <div class="hero-logo">M</div>
       <div>
-        <div class="hero-title">Multica 桥接设置</div>
-        <div class="hero-sub">AstrBot × Multica · 连接参数与会话过滤 · 修改后自动保存热生效</div>
+        <div class="hero-title" data-i18n="settings.title">Multica 桥接设置</div>
+        <div class="hero-sub" data-i18n="settings.subtitle">AstrBot × Multica · 连接参数与会话过滤 · 修改后自动保存热生效</div>
       </div>
     </div>
 
@@ -254,15 +241,15 @@
       <div class="card-head">
         <span class="ic ic-blue">⚙️</span>
         <div>
-          <h2>连接配置</h2>
-          <div class="card-desc">Multica API 连通参数与目标工作区/项目</div>
+          <h2 data-i18n="settings.conn.title">连接配置</h2>
+          <div class="card-desc" data-i18n="settings.conn.desc">Multica API 连通参数与目标工作区/项目</div>
         </div>
       </div>
 
       <div class="field">
         <div>
-          <div class="field-label">启用 Multica 桥接</div>
-          <div class="field-hint">关闭后插件将完全停止响应</div>
+          <div class="field-label" data-i18n="settings.conn.enabled">启用 Multica 桥接</div>
+          <div class="field-hint" data-i18n="settings.conn.enabledHint">关闭后插件将完全停止响应</div>
         </div>
         <label class="switch field-control">
           <input type="checkbox" id="field-enabled" />
@@ -272,34 +259,34 @@
 
       <div class="field">
         <div>
-          <div class="field-label">API 地址</div>
-          <div class="field-hint">Cloud 模式默认 <code class="cmd">https://multica.ai</code>，自托管填服务器地址</div>
+          <div class="field-label" data-i18n="settings.conn.apiUrl">API 地址</div>
+          <div class="field-hint" data-i18n="settings.conn.apiUrlHint">Cloud 模式默认 https://multica.ai，自托管填服务器地址</div>
         </div>
         <input type="text" id="field-api_url" class="field-control mono" placeholder="https://multica.ai" />
       </div>
 
       <div class="field">
         <div>
-          <div class="field-label">认证 Token</div>
-          <div class="field-hint">Multica 控制台生成，保存时已脱敏安全处理</div>
+          <div class="field-label" data-i18n="settings.conn.token">认证 Token</div>
+          <div class="field-hint" data-i18n="settings.conn.tokenHint">Multica 控制台生成，保存时已脱敏安全处理</div>
         </div>
-        <input type="password" id="field-token" class="field-control" placeholder="输入 Token" autocomplete="off" />
+        <input type="password" id="field-token" class="field-control" placeholder="Token" autocomplete="off" />
       </div>
 
       <div class="field">
         <div>
-          <div class="field-label">工作区 ID <span class="pill">可选</span></div>
-          <div class="field-hint">留空自动从 API 获取，通常无需填写</div>
+          <div class="field-label"><span data-i18n="settings.conn.workspaceId">工作区 ID</span> <span class="pill" data-i18n="settings.optional">可选</span></div>
+          <div class="field-hint" data-i18n="settings.conn.workspaceIdHint">留空自动从 API 获取，通常无需填写</div>
         </div>
-        <input type="text" id="field-workspace_id" class="field-control mono" placeholder="留空自动获取" />
+        <input type="text" id="field-workspace_id" class="field-control mono" placeholder="auto" />
       </div>
 
       <div class="field">
         <div>
-          <div class="field-label">项目 ID <span class="pill">可选</span></div>
-          <div class="field-hint">指定后新建 Issue 默认进入该项目</div>
+          <div class="field-label"><span data-i18n="settings.conn.projectId">项目 ID</span> <span class="pill" data-i18n="settings.optional">可选</span></div>
+          <div class="field-hint" data-i18n="settings.conn.projectIdHint">指定后新建 Issue 默认进入该项目</div>
         </div>
-        <input type="text" id="field-project_id" class="field-control mono" placeholder="UUID（可选）" />
+        <input type="text" id="field-project_id" class="field-control mono" placeholder="UUID" />
       </div>
     </section>
 
@@ -308,25 +295,25 @@
       <div class="card-head">
         <span class="ic ic-violet">🛡️</span>
         <div>
-          <h2>会话过滤</h2>
-          <div class="card-desc">控制插件在哪些群聊 / 私聊中生效</div>
+          <h2 data-i18n="settings.filter.title">会话过滤</h2>
+          <div class="card-desc" data-i18n="settings.filter.desc">控制插件在哪些群聊 / 私聊中生效</div>
         </div>
       </div>
 
       <div class="field filter-block">
         <div class="filter-head">
           <div>
-            <div class="field-label">群聊过滤模式</div>
-            <div class="field-hint">黑名单：排除指定群 · 白名单：仅指定群可用 · 关闭：不限制</div>
+            <div class="field-label" data-i18n="settings.filter.groupMode">群聊过滤模式</div>
+            <div class="field-hint" data-i18n="settings.filter.groupModeHint">黑名单：排除指定群 · 白名单：仅指定群可用 · 关闭：不限制</div>
           </div>
           <select id="field-group_chat_mode" class="field-control narrow">
-            <option value="blacklist">黑名单</option>
-            <option value="whitelist">白名单</option>
-            <option value="disabled">关闭</option>
+            <option value="blacklist" data-i18n="settings.filter.blacklist">黑名单</option>
+            <option value="whitelist" data-i18n="settings.filter.whitelist">白名单</option>
+            <option value="disabled" data-i18n="settings.filter.disabled">关闭</option>
           </select>
         </div>
         <div class="filter-block">
-          <div class="field-hint">群聊 ID 列表（每行一个）</div>
+          <div class="field-hint" data-i18n="settings.filter.groupListHint">群聊 ID 列表（每行一个）</div>
           <textarea id="field-group_chat_list" class="filter-list-textarea" rows="3" placeholder="123456789&#10;987654321"></textarea>
         </div>
       </div>
@@ -334,24 +321,24 @@
       <div class="field filter-block" style="border-top:1px dashed var(--border);">
         <div class="filter-head">
           <div>
-            <div class="field-label">私聊过滤模式</div>
-            <div class="field-hint">黑名单：排除指定用户 · 白名单：仅指定用户可用 · 关闭：不限制</div>
+            <div class="field-label" data-i18n="settings.filter.privateMode">私聊过滤模式</div>
+            <div class="field-hint" data-i18n="settings.filter.privateModeHint">黑名单：排除指定用户 · 白名单：仅指定用户可用 · 关闭：不限制</div>
           </div>
           <select id="field-private_chat_mode" class="field-control narrow">
-            <option value="blacklist">黑名单</option>
-            <option value="whitelist">白名单</option>
-            <option value="disabled">关闭</option>
+            <option value="blacklist" data-i18n="settings.filter.blacklist">黑名单</option>
+            <option value="whitelist" data-i18n="settings.filter.whitelist">白名单</option>
+            <option value="disabled" data-i18n="settings.filter.disabled">关闭</option>
           </select>
         </div>
         <div class="filter-block">
-          <div class="field-hint">用户 ID 列表（每行一个）</div>
+          <div class="field-hint" data-i18n="settings.filter.privateListHint">用户 ID 列表（每行一个）</div>
           <textarea id="field-private_chat_list" class="filter-list-textarea" rows="3" placeholder="123456789&#10;987654321"></textarea>
         </div>
       </div>
 
-      <div class="note">
-        💡 权限提醒：可在 AstrBot「指令管理」中将本插件主指令 <b>/multica</b> 设为
-        <b>仅管理员</b>，实现 ChatOps 指令的权限回收。
+      <div class="note" data-i18n="settings.perm.note">
+        💡 权限提醒：可在 AstrBot「指令管理」中把每条指令分别设为「仅管理员」，
+        例如收紧 workspace create / project create 给管理员，而把 inbox 放开给成员。
       </div>
     </section>
 
@@ -360,21 +347,22 @@
       <div class="card-head">
         <span class="ic ic-cyan">💬</span>
         <div>
-          <h2>指令说明</h2>
-          <div class="card-desc">在允许的群聊 / 私聊中发送以下指令操作 Multica</div>
+          <h2 data-i18n="settings.cmd.title">指令说明</h2>
+          <div class="card-desc" data-i18n="settings.cmd.desc">在允许的群聊 / 私聊中发送以下指令操作 Multica</div>
         </div>
       </div>
       <table class="cmd-table">
-        <tr><td><code class="cmd">/multica help</code></td><td>显示帮助信息</td></tr>
-        <tr><td><code class="cmd">/multica status</code></td><td>检查连接与 Token 状态</td></tr>
-        <tr><td><code class="cmd">/multica issue create &lt;标题&gt; [--desc 描述]</code></td><td>新建 Issue（不依赖本机 CLI）</td></tr>
-        <tr><td><code class="cmd">/multica workspace list</code></td><td>列出可访问的工作区</td></tr>
-        <tr><td><code class="cmd">/multica workspace select &lt;id|slug&gt;</code></td><td>切换当前工作区（持久化）</td></tr>
-        <tr><td><code class="cmd">/multica workspace create &lt;名称&gt; [--slug ..] [--desc ..]</code></td><td>创建工作区</td></tr>
-        <tr><td><code class="cmd">/multica project list</code></td><td>列出当前工作区的项目</td></tr>
-        <tr><td><code class="cmd">/multica project select &lt;id&gt;</code></td><td>切换当前项目（持久化），新建 Issue 默认进入所选项目</td></tr>
-        <tr><td><code class="cmd">/multica project create &lt;标题&gt; [--desc ..]</code></td><td>创建项目</td></tr>
-        <tr><td><code class="cmd">/multica inbox [数量] [open|done]</code></td><td>收件箱：最近 Issue 及进展（可只看未完成/已完成）</td></tr>
+        <tr><td><code class="cmd">/multica</code></td><td data-i18n="settings.cmd.tree">显示指令树</td></tr>
+        <tr><td><code class="cmd">/multica help</code></td><td data-i18n="settings.cmd.help">显示帮助信息</td></tr>
+        <tr><td><code class="cmd">/multica status</code></td><td data-i18n="settings.cmd.status">检查连接、当前工作区与项目</td></tr>
+        <tr><td><code class="cmd">/multica issue create &lt;标题&gt; [选项]</code></td><td data-i18n="settings.cmd.issue">新建 Issue（支持 --desc/--priority/--status 等）</td></tr>
+        <tr><td><code class="cmd">/multica workspace list</code></td><td data-i18n="settings.cmd.wsList">列出可访问的工作区</td></tr>
+        <tr><td><code class="cmd">/multica workspace select &lt;id|slug&gt;</code></td><td data-i18n="settings.cmd.wsSelect">切换当前工作区（持久化）</td></tr>
+        <tr><td><code class="cmd">/multica workspace create &lt;名称&gt; [选项]</code></td><td data-i18n="settings.cmd.wsCreate">创建工作区</td></tr>
+        <tr><td><code class="cmd">/multica project list</code></td><td data-i18n="settings.cmd.projList">列出当前工作区的项目</td></tr>
+        <tr><td><code class="cmd">/multica project select &lt;id&gt;</code></td><td data-i18n="settings.cmd.projSelect">切换当前项目（持久化）</td></tr>
+        <tr><td><code class="cmd">/multica project create &lt;标题&gt; [--desc ..]</code></td><td data-i18n="settings.cmd.projCreate">创建项目</td></tr>
+        <tr><td><code class="cmd">/multica inbox [数量] [open|done]</code></td><td data-i18n="settings.cmd.inbox">收件箱：最近 Issue 及进展</td></tr>
       </table>
     </section>
 
@@ -383,24 +371,23 @@
       <div class="card-head">
         <span class="ic ic-amber">🔌</span>
         <div>
-          <h2>连接测试</h2>
-          <div class="card-desc">验证 Multica API 连通性与 Token 有效性</div>
+          <h2 data-i18n="settings.test.title">连接测试</h2>
+          <div class="card-desc" data-i18n="settings.test.desc">验证 Multica API 连通性与 Token 有效性</div>
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" id="btn-test">🔌 测试连接</button>
+        <button class="btn btn-primary" id="btn-test" data-i18n="settings.test.button">🔌 测试连接</button>
         <span class="msg" id="test-result"></span>
       </div>
     </section>
 
-    <div class="footer">AstrBot Multica 桥接插件 · 所有修改即时保存并热生效</div>
+    <div class="footer" data-i18n="settings.footer">AstrBot Multica 桥接插件 · 所有修改即时保存并热生效</div>
   </div>
 
   <div class="toast" id="toast"><span class="toast-emoji"></span><span class="toast-msg"></span></div>
 
   <script>
     (function () {
-      const PLUGIN_NAME = 'astrbot_plugin_multica_bridge';
       const FIELDS = ['enabled', 'api_url', 'token', 'workspace_id', 'project_id', 'group_chat_mode', 'group_chat_list', 'private_chat_mode', 'private_chat_list'];
       const BOOLS = new Set(['enabled']);
       const LISTS = new Set(['group_chat_list', 'private_chat_list']);
@@ -409,7 +396,9 @@
       let cfg = {};
       let bridge = null;
       let saveTimer = null;
-      let tokenChanged = false;  // 追踪 token 是否被用户手动修改
+      let tokenChanged = false;
+      // 只提交用户改动过的字段，避免整份回写覆盖聊天指令刚切换的 workspace_id
+      const dirty = new Set();
 
       // ── Bridge ──
       function getBridge() {
@@ -420,16 +409,28 @@
         return bridge;
       }
 
+      // 走 bridge 的 i18n（缺失时回退到页面内写死的中文）
+      function t(key, fallback) {
+        const b = getBridge();
+        if (b && typeof b.t === 'function') {
+          try {
+            const v = b.t(key, fallback);
+            if (v) return v;
+          } catch (e) { /* ignore */ }
+        }
+        return fallback;
+      }
+
       async function apiGet(endpoint, params) {
         const b = getBridge();
-        if (!b) throw new Error('Bridge SDK 未就绪');
+        if (!b) throw new Error(t('settings.toast.bridgeNotReady', 'Bridge SDK 未就绪'));
         const r = await b.apiGet(endpoint, params || {});
         return extractData(r);
       }
 
       async function apiPost(endpoint, body) {
         const b = getBridge();
-        if (!b) throw new Error('Bridge SDK 未就绪');
+        if (!b) throw new Error(t('settings.toast.bridgeNotReady', 'Bridge SDK 未就绪'));
         const r = await b.apiPost(endpoint, body);
         return extractData(r);
       }
@@ -437,42 +438,58 @@
       function extractData(response) {
         if (response && typeof response === 'object') {
           if (response.success === true) return response.data;
-          if (response.success === false) throw new Error(response.error || '请求失败');
+          if (response.success === false) {
+            throw new Error(response.error || t('settings.toast.requestFailed', '请求失败'));
+          }
         }
         return response;
       }
 
       // ── Theme ──
+      // AstrBot 的 bridge 通过 context 下发 isDark，并在 <html> 上写 data-theme。
+      // 注意：bridge 上没有 isDark / onThemeChange 成员，必须用 getContext / onContext。
       function applyTheme(isDark) {
         document.body.classList.toggle('dark', !!isDark);
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
       }
       function watchTheme() {
         const b = getBridge();
-        if (b && typeof b.isDark !== 'undefined') applyTheme(b.isDark);
-        if (b && typeof b.onThemeChange === 'function') {
-          b.onThemeChange(applyTheme);
+        if (!b) return;
+        if (typeof b.getContext === 'function') {
+          const ctx = b.getContext();
+          if (ctx && typeof ctx.isDark === 'boolean') applyTheme(ctx.isDark);
         }
+        if (typeof b.onContext === 'function') {
+          b.onContext(function (ctx) {
+            if (ctx && typeof ctx.isDark === 'boolean') applyTheme(ctx.isDark);
+          });
+        }
+      }
+
+      // ── i18n 应用到 DOM ──
+      function applyI18n() {
+        document.querySelectorAll('[data-i18n]').forEach(function (el) {
+          const text = t(el.getAttribute('data-i18n'), el.textContent.trim());
+          if (text) el.textContent = text;
+        });
       }
 
       // ── Toast ──
       const EMOJIS = { 'toast-ok': '✅', 'toast-err': '⚠️', 'toast-info': '💡' };
       let toastTimer = null;
       function showToast(msg, cls) {
-        const t = document.getElementById('toast');
+        const node = document.getElementById('toast');
         const clsName = cls || 'toast-info';
-        t.className = 'toast ' + clsName + ' show';
-        t.querySelector('.toast-msg').textContent = msg;
-        t.querySelector('.toast-emoji').textContent = EMOJIS[clsName] || '';
+        node.className = 'toast ' + clsName + ' show';
+        node.querySelector('.toast-msg').textContent = msg;
+        node.querySelector('.toast-emoji').textContent = EMOJIS[clsName] || '';
         if (toastTimer) clearTimeout(toastTimer);
-        toastTimer = setTimeout(function () {
-          t.classList.remove('show');
-        }, 2600);
+        toastTimer = setTimeout(function () { node.classList.remove('show'); }, 2600);
       }
 
       // ── Load Config ──
       function listToText(val) {
-        if (Array.isArray(val)) return val.join('\n');
-        return '';
+        return Array.isArray(val) ? val.join('\n') : '';
       }
       async function loadConfig() {
         try {
@@ -492,34 +509,39 @@
             }
           });
         } catch (e) {
-          showToast('加载配置失败：' + e.message, 'toast-err');
+          showToast(t('settings.toast.loadFailed', '加载配置失败：') + e.message, 'toast-err');
         }
       }
 
-      // ── Save Config ──
+      // ── Save Config（增量） ──
       function scheduleSave() {
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(doSave, 800);
       }
 
       async function doSave() {
+        if (!dirty.size) return;
+        const payload = {};
+        dirty.forEach(function (k) {
+          if (k === 'token' && !tokenChanged) return;
+          payload[k] = cfg[k];
+        });
+        if (!Object.keys(payload).length) {
+          dirty.clear();
+          return;
+        }
         try {
-          var payload = {};
-          for (var key in cfg) {
-            if (cfg.hasOwnProperty(key)) {
-              if (key === 'token' && !tokenChanged) continue;
-              payload[key] = cfg[key];
-            }
-          }
           await apiPost('actions/save_config', payload);
-          showToast('配置已保存', 'toast-ok');
+          dirty.clear();
+          showToast(t('settings.toast.saved', '配置已保存'), 'toast-ok');
         } catch (e) {
-          showToast('保存失败：' + e.message, 'toast-err');
+          showToast(t('settings.toast.saveFailed', '保存失败：') + e.message, 'toast-err');
         }
       }
 
       function setField(k, value) {
         cfg[k] = value;
+        dirty.add(k);
         scheduleSave();
       }
 
@@ -534,11 +556,9 @@
             el.addEventListener('change', function () { setField(k, el.value); });
           } else if (LISTS.has(k)) {
             el.addEventListener('input', function () {
-              var lines = el.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+              const lines = el.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
               setField(k, lines);
             });
-          } else if (el.type === 'number') {
-            el.addEventListener('input', function () { setField(k, parseInt(el.value, 10) || 0); });
           } else {
             el.addEventListener('input', function () {
               if (k === 'token') tokenChanged = true;
@@ -552,14 +572,19 @@
       async function testConnection() {
         const btn = document.getElementById('btn-test');
         const result = document.getElementById('test-result');
+        const original = btn.textContent;
         btn.disabled = true;
-        btn.textContent = '⏳ 测试中…';
+        btn.textContent = t('settings.test.testing', '⏳ 测试中…');
         result.textContent = '';
         try {
           const r = await apiPost('actions/test_connection');
           if (r.ok) {
-            result.innerHTML = '<span class="status-dot status-ok"></span><b>连接成功</b>' +
-              (r.workspace_name ? ' — 工作区：' + r.workspace_name : '');
+            let html = '<span class="status-dot status-ok"></span><b>' +
+              t('settings.test.ok', '连接成功') + '</b>';
+            if (r.workspace_name) {
+              html += ' — ' + t('settings.test.workspace', '工作区：') + r.workspace_name;
+            }
+            result.innerHTML = html;
           } else {
             result.innerHTML = '<span class="status-dot status-err"></span>' + r.message;
           }
@@ -567,7 +592,7 @@
           result.innerHTML = '<span class="status-dot status-err"></span>' + e.message;
         } finally {
           btn.disabled = false;
-          btn.textContent = '🔌 测试连接';
+          btn.textContent = original;
         }
       }
 
@@ -578,7 +603,11 @@
           setTimeout(init, 300);
           return;
         }
+        if (typeof bridge.ready === 'function') {
+          try { await bridge.ready(); } catch (e) { /* 旧版 bridge 无 ready */ }
+        }
         watchTheme();
+        applyI18n();
         bindFields();
         await loadConfig();
         document.getElementById('btn-test').addEventListener('click', testConnection);

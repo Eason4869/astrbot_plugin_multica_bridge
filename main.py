@@ -2,11 +2,17 @@
 
 将 AstrBot 接入 Multica 平台：连接测试、通过聊天指令创建 Issue、管理工作区与项目。
 所有配置通过 WebUI 设置页管理，修改后自动保存热生效。
+
+指令使用 AstrBot 标准的指令组（``@filter.command_group``）注册，
+因此每条子指令在 AstrBot「指令管理」中都是独立条目，
+可分别设置「仅管理员 / 成员可」等权限。
 """
 
 from __future__ import annotations
 
+from functools import partial
 from pathlib import Path
+from typing import Any, Callable, Coroutine
 
 from astrbot import logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
@@ -15,7 +21,6 @@ from astrbot.core.message.components import Plain
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .web_api import WebApiMixin
-
 
 _STATUS_ICONS = {
     "todo": "🔴",
@@ -33,11 +38,23 @@ _PRIORITY_LABELS = {
     "low": "低",
 }
 
+# 中文优先级 -> API 值，便于用户直接用中文输入
+_PRIORITY_ALIASES = {v: k for k, v in _PRIORITY_LABELS.items()}
+
 _ASSIGNEE_LABELS = {
     "agent": "智能体",
     "squad": "团队",
     "member": "成员",
 }
+
+_VALID_STATUS = (
+    "backlog",
+    "todo",
+    "in_progress",
+    "in_review",
+    "done",
+    "cancelled",
+)
 
 
 class Main(WebApiMixin, Star):
@@ -51,6 +68,8 @@ class Main(WebApiMixin, Star):
         super().__init__(context)
         self.context = context
         self.config = config or {}
+        # Star 基类会注入插件级 logger；缺失时回退到全局 logger
+        self.log = getattr(self, "logger", None) or logger
 
     async def initialize(self) -> None:
         """插件加载时初始化：构建运行时配置 + 注册 Web API。"""
@@ -65,7 +84,7 @@ class Main(WebApiMixin, Star):
                 load_plugin_config(data_dir),
             )
         except Exception as e:
-            logger.warning("[multica_bridge] 加载配置失败，使用默认值: %s", e)
+            self.log.warning("[multica_bridge] 加载配置失败，使用默认值: %s", e)
             from .config import CONFIG_DEFAULTS
 
             self.cfg = dict(CONFIG_DEFAULTS)
@@ -73,9 +92,180 @@ class Main(WebApiMixin, Star):
         try:
             self.register_routes()
         except Exception as e:
-            logger.warning("[multica_bridge] Web API 注册失败: %s", e)
+            self.log.warning("[multica_bridge] Web API 注册失败: %s", e)
 
-    # ── 命令处理 ──
+    # ── 指令组：/multica ──
+    #
+    # 结构（在 AstrBot 指令管理中同样是树形展示，可逐条设置权限）：
+    #   multica
+    #   ├── help / status / inbox
+    #   ├── issue    -> create
+    #   ├── workspace-> list / select / create
+    #   └── project  -> list / select / create
+    # 不输入子指令时（如直接发送 /multica），AstrBot 会自动渲染指令树。
+
+    @filter.command_group("multica")
+    def multica(self) -> None:
+        """Multica 桥接指令组。"""
+
+    @multica.command("help", alias={"帮助", "h"})
+    async def multica_help(self, event: AstrMessageEvent) -> None:
+        """显示 Multica 桥接指令帮助。"""
+        await self._run(event, partial(self._cmd_help, event))
+
+    @multica.command("status", alias={"状态"})
+    async def multica_status(self, event: AstrMessageEvent) -> None:
+        """检查 Multica 连接与当前工作区/项目状态。"""
+        await self._run(event, partial(self._cmd_status, event))
+
+    @multica.command("inbox", alias={"收件箱"})
+    async def multica_inbox(self, event: AstrMessageEvent) -> None:
+        """查看收件箱：最近 Issue 及进展。"""
+        await self._run(
+            event,
+            partial(self._cmd_inbox, event, self._args(event, 2)),
+        )
+
+    @multica.group("issue", alias={"议题"})
+    def multica_issue(self) -> None:
+        """Issue 相关指令组。"""
+
+    @multica_issue.command("create", alias={"新建"})
+    async def multica_issue_create(self, event: AstrMessageEvent) -> None:
+        """新建 Issue（支持 --desc/--priority/--status/--assignee 等）。"""
+        await self._run(
+            event,
+            partial(self._cmd_issue_create, event, self._args(event, 3)),
+        )
+
+    @multica.group("workspace", alias={"工作区"})
+    def multica_workspace(self) -> None:
+        """工作区相关指令组。"""
+
+    @multica_workspace.command("list", alias={"列表"})
+    async def multica_workspace_list(self, event: AstrMessageEvent) -> None:
+        """列出当前 Token 可访问的所有工作区。"""
+        await self._run(event, partial(self._cmd_workspace_list, event))
+
+    @multica_workspace.command("select", alias={"选择", "切换"})
+    async def multica_workspace_select(self, event: AstrMessageEvent) -> None:
+        """切换当前工作区（持久化）。"""
+        await self._run(
+            event,
+            partial(self._cmd_workspace_select, event, self._args(event, 3)),
+        )
+
+    @multica_workspace.command("create", alias={"新建"})
+    async def multica_workspace_create(self, event: AstrMessageEvent) -> None:
+        """创建工作区。"""
+        await self._run(
+            event,
+            partial(self._cmd_workspace_create, event, self._args(event, 3)),
+        )
+
+    @multica.group("project", alias={"项目"})
+    def multica_project(self) -> None:
+        """项目相关指令组。"""
+
+    @multica_project.command("list", alias={"列表"})
+    async def multica_project_list(self, event: AstrMessageEvent) -> None:
+        """列出当前工作区下的所有项目。"""
+        await self._run(event, partial(self._cmd_project_list, event))
+
+    @multica_project.command("select", alias={"选择", "切换"})
+    async def multica_project_select(self, event: AstrMessageEvent) -> None:
+        """切换当前项目（持久化）。"""
+        await self._run(
+            event,
+            partial(self._cmd_project_select, event, self._args(event, 3)),
+        )
+
+    @multica_project.command("create", alias={"新建"})
+    async def multica_project_create(self, event: AstrMessageEvent) -> None:
+        """创建项目。"""
+        await self._run(
+            event,
+            partial(self._cmd_project_create, event, self._args(event, 3)),
+        )
+
+    # ── 统一入口守卫 ──
+
+    async def _run(
+        self,
+        event: AstrMessageEvent,
+        action: Callable[[], Coroutine[Any, Any, None]],
+    ) -> None:
+        """统一守卫：启用检查 → 会话过滤 → 执行 → 终止事件传播。
+
+        - 插件停用时给出明确提示，并终止事件（不再交给 LLM）。
+        - 会话被黑白名单过滤时不终止事件，交回 LLM 处理（与历史行为一致）。
+        """
+        try:
+            cfg = getattr(self, "cfg", None) or {}
+            if not cfg.get("enabled", True):
+                await self._reply(
+                    event,
+                    "⛔ Multica 桥接当前已停用。请在 AstrBot WebUI → 插件 → "
+                    "Multica桥接 → 设置 中启用后再试。",
+                )
+                event.stop_event()
+                return
+
+            if not self._chat_allowed(event):
+                return
+
+            await action()
+        except Exception as e:
+            self.log.error("[multica_bridge] 指令处理异常: %s", e)
+        event.stop_event()
+
+    def _chat_allowed(self, event: AstrMessageEvent) -> bool:
+        """按黑白名单配置判断当前会话是否允许执行指令。"""
+        from .multica_client import check_chat_allowed
+
+        chat_type = "group" if self._is_group_chat(event) else "private"
+        chat_id = self._get_chat_id(event)
+        cfg = getattr(self, "cfg", None) or {}
+        if chat_id and not check_chat_allowed(cfg, chat_type, chat_id):
+            self.log.debug(
+                "[multica_bridge] 会话 %s (%s) 被过滤配置拦截",
+                chat_id,
+                chat_type,
+            )
+            return False
+        return True
+
+    @staticmethod
+    def _args(event: AstrMessageEvent, tokens: int) -> str:
+        """取指令词之后的剩余参数文本。
+
+        AstrBot 只剥离唤醒前缀（如 ``/``），``event.message_str`` 仍保留
+        ``multica workspace create ...`` 全文。这里按空白切分并丢弃前
+        ``tokens`` 个指令词，从而同时兼容别名写法。
+        """
+        text = (event.message_str or "").strip()
+        parts = text.split(maxsplit=tokens)
+        return parts[tokens].strip() if len(parts) > tokens else ""
+
+    @staticmethod
+    def _parse_flags(args: str, flags: tuple[str, ...]) -> tuple[str, dict[str, str]]:
+        """把 ``标题 --desc 描述 --slug s`` 解析为 ``(标题, {"--desc": ...})``。
+
+        未出现的 flag 不会出现在结果中；重复出现的 flag 以第一次为准。
+        """
+        parts = (args or "").split()
+        positions = sorted((parts.index(f), f) for f in flags if f in parts)
+        if not positions:
+            return " ".join(parts).strip(), {}
+
+        head = " ".join(parts[: positions[0][0]]).strip()
+        values: dict[str, str] = {}
+        for i, (idx, flag) in enumerate(positions):
+            end = positions[i + 1][0] if i + 1 < len(positions) else len(parts)
+            values[flag] = " ".join(parts[idx + 1 : end]).strip()
+        return head, values
+
+    # ── 通用工具 ──
 
     @staticmethod
     def _get_chat_id(event: AstrMessageEvent) -> str:
@@ -92,71 +282,43 @@ class Main(WebApiMixin, Star):
     def _is_group_chat(event: AstrMessageEvent) -> bool:
         return not event.is_private_chat()
 
-    @filter.command("multica")
-    async def _on_command(self, event: AstrMessageEvent) -> None:
-        """处理 /multica 开头的命令。
+    @staticmethod
+    def _slugify(name: str) -> str:
+        """按名称自动生成 slug：仅保留字母/数字/空格，空格转连字符，转小写。"""
+        import re
 
-        通过 AstrBot 标准的 ``@command`` 装饰器在类定义阶段完成注册，
-        使该指令在 AstrBot 指令管理中被视为一等指令（可设为「仅管理员」等权限）。
-        """
-        await self._dispatch_multica(event)
+        cleaned = re.sub(r"[^a-zA-Z0-9 ]", "", name).strip().lower()
+        return re.sub(r"\s+", "-", cleaned)
 
-    async def _dispatch_multica(self, event: AstrMessageEvent) -> None:
-        """执行实际的 /multica 子命令分发逻辑。"""
+    def _save_cfg(self) -> None:
+        """将当前 self.cfg 原子写入插件自有 config.json。"""
         try:
-            text = (event.message_str or "").strip()
+            from .config import save_plugin_config
 
-            # AstrBot 的指令管道可能剥离唤醒前缀（如 "/"），但为了保证健壮性，
-            # 这里兼容 message_str 同时带有 /multica 或 multica 前缀的情况。
-            if text.startswith("/multica"):
-                text = text[len("/multica"):].strip()
-            elif text.startswith("multica"):
-                text = text[len("multica"):].strip()
-
-            # 检查黑/白名单
-            from .multica_client import check_chat_allowed
-
-            chat_type = "group" if self._is_group_chat(event) else "private"
-            chat_id = self._get_chat_id(event)
-            if chat_id and not check_chat_allowed(self.cfg, chat_type, chat_id):
-                logger.debug(
-                    "[multica_bridge] 会话 %s (%s) 被过滤配置拦截",
-                    chat_id, chat_type,
-                )
-                return
-
-            # 解析子命令（text 已去除前缀，空文本 = help）
-            sub = text.split(maxsplit=1)[0].strip() if text else "help"
-            args = text[len(sub):].strip() if text else ""
-
-            if sub in ("help", "帮助"):
-                await self._cmd_help(event)
-            elif sub in ("status", "状态"):
-                await self._cmd_status(event)
-            elif sub in ("issue", "议题"):
-                await self._cmd_issue(event, args)
-            elif sub in ("workspace", "工作区"):
-                await self._cmd_workspace(event, args)
-            elif sub in ("project", "项目"):
-                await self._cmd_project(event, args)
-            elif sub in ("inbox", "收件箱"):
-                await self._cmd_inbox(event, args)
-            else:
-                await self._reply(event, f"未知子命令: {sub}\n发送 /multica help 查看帮助")
-
-            event.stop_event()  # 阻止 LLM 继续处理此消息
+            data_dir = getattr(self, "_data_dir", None) or str(
+                Path(get_astrbot_data_path()) / "plugin_data" / self.name
+            )
+            save_plugin_config(data_dir, self.cfg)
         except Exception as e:
-            logger.error("[multica_bridge] 命令处理异常: %s", e)
+            self.log.error("[multica_bridge] 保存配置失败: %s", e)
+            raise
+
+    # ── 子指令实现 ──
 
     async def _cmd_help(self, event: AstrMessageEvent) -> None:
         help_text = (
             "Multica 桥接插件命令：\n"
-            "/multica help  — 显示此帮助\n"
-            "/multica status — 检查 Multica 连接状态\n"
-            "/multica issue create <标题> [--desc 描述] — 新建 Issue\n"
+            "/multica — 显示指令树（不输子指令时）\n"
+            "/multica help — 显示此帮助\n"
+            "/multica status — 检查连接、当前工作区与项目\n"
+            "/multica issue create <标题> [选项] — 新建 Issue\n"
+            "   选项：--desc 描述 --priority 紧急|高|中|低\n"
+            "         --status todo|in_progress|in_review|backlog|done\n"
+            "         --assignee <id> --project <id> --due YYYY-MM-DD\n"
+            "         --labels 标签1,标签2\n"
             "/multica workspace list — 列出可访问的工作区\n"
             "/multica workspace select <id|slug> — 切换当前工作区（持久化）\n"
-            "/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景信息] — 创建工作区\n"
+            "/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景]\n"
             "/multica project list — 列出当前工作区的项目\n"
             "/multica project select <id> — 切换当前项目（持久化）\n"
             "/multica project create <标题> [--desc 描述] — 创建项目\n"
@@ -165,74 +327,105 @@ class Main(WebApiMixin, Star):
         await self._reply(event, help_text)
 
     async def _cmd_status(self, event: AstrMessageEvent) -> None:
-        from .multica_client import MulticaClient
+        from .multica_client import MulticaClient, mask_secret
 
         client = MulticaClient(self.cfg)
         result = await client.test_connection()
-        if result["ok"]:
-            name = result.get("workspace_name")
-            await self._reply(event, f"Multica 连接正常{(' — ' + name) if name else ''}")
+        if not result["ok"]:
+            await self._reply(event, f"❌ Multica 连接失败：{result['message']}")
+            return
+
+        lines = ["✅ Multica 连接正常"]
+        name = result.get("workspace_name")
+        wsid = result.get("workspace_id")
+        slug = result.get("workspace_slug")
+        if name:
+            detail = f"• 工作区：{name}"
+            if slug:
+                detail += f"（slug: {slug}）"
+            lines.append(detail)
+            if wsid:
+                lines.append(f"  id: {wsid}")
+
+        project_id = str(self.cfg.get("project_id") or "").strip()
+        if project_id:
+            title = await client.get_project_title(project_id)
+            lines.append(
+                f"• 项目：{title}（{project_id}）"
+                if title
+                else f"• 项目 id：{project_id}（未能解析标题）"
+            )
         else:
-            await self._reply(event, f"Multica 连接失败: {result['message']}")
+            lines.append("• 项目：未指定（新建 Issue 将进入工作区默认项目）")
 
-    async def _cmd_issue(self, event: AstrMessageEvent, args: str) -> None:
-        """处理 /multica issue 子命令。
+        token = str(self.cfg.get("token") or "")
+        lines.append(f"• Token：{mask_secret(token)}")
+        lines.append(f"• API：{self.cfg.get('api_url') or '（未配置）'}")
+        await self._reply(event, "\n".join(lines))
 
-        通过 HTTP API 创建 Issue，不依赖本机是否安装 multica CLI
-        （避免“本机未安装 multica”误报）。
+    async def _cmd_issue_create(self, event: AstrMessageEvent, args: str) -> None:
+        """处理 ``/multica issue create``：通过 HTTP API 创建 Issue。
+
+        不依赖本机是否安装 multica CLI，避免“本机未安装 multica”误报。
         """
         from .multica_client import MulticaClient
 
-        parts = args.split()
-        if not parts or parts[0] not in ("create", "新建"):
+        flags = (
+            "--desc",
+            "--priority",
+            "--status",
+            "--assignee",
+            "--project",
+            "--due",
+            "--labels",
+        )
+        title, values = self._parse_flags(args, flags)
+
+        if not title:
             await self._reply(
                 event,
-                "用法：/multica issue create <标题> [--desc 描述]\n"
-                "示例：/multica issue create 修复登录失败 --desc 用户反馈登录超时",
+                "用法：/multica issue create <标题> [--desc 描述] [--priority 紧急|高|中|低]\n"
+                "示例：/multica issue create 修复登录失败 --desc 用户反馈登录超时 --priority 高",
             )
             return
 
-        # 解析标题与可选描述（--desc 之前为标题）
-        tokens = parts[1:]
-        desc = ""
-        if "--desc" in tokens:
-            idx = tokens.index("--desc")
-            title = " ".join(tokens[:idx]).strip()
-            desc = " ".join(tokens[idx + 1:]).strip()
-        else:
-            title = " ".join(tokens).strip()
-
-        if not title:
-            await self._reply(event, "标题不能为空。用法：/multica issue create <标题>")
+        missing = [f for f in flags if f in values and not values[f]]
+        if missing:
+            await self._reply(event, f"❌ 参数 {missing[0]} 缺少值")
             return
 
+        priority = values.get("--priority", "").strip()
+        priority = _PRIORITY_ALIASES.get(priority, priority)
+        status = values.get("--status", "").strip()
+        if status and status not in _VALID_STATUS:
+            await self._reply(
+                event,
+                f"❌ 无效的 --status：{status}\n"
+                f"可选：{'、'.join(_VALID_STATUS)}",
+            )
+            return
+
+        labels = [
+            s.strip()
+            for s in values.get("--labels", "").replace("，", ",").split(",")
+            if s.strip()
+        ]
+
         client = MulticaClient(self.cfg)
-        result = await client.create_issue(title=title, description=desc)
+        result = await client.create_issue(
+            title=title,
+            description=values.get("--desc", ""),
+            priority=priority,
+            status=status,
+            assignee_id=values.get("--assignee", "").strip(),
+            project_id=values.get("--project", "").strip(),
+            due_date=values.get("--due", "").strip(),
+            labels=labels,
+        )
         if result["ok"]:
             await self._reply(event, f"✅ {result['message']}")
         else:
             await self._reply(event, f"❌ 创建失败：{result['message']}")
-
-    async def _cmd_workspace(self, event: AstrMessageEvent, args: str) -> None:
-        """处理 /multica workspace 子命令（list / select / create）。"""
-        parts = args.split()
-        action = parts[0] if parts else ""
-        rest = args[len(action):].strip() if action else ""
-
-        if action in ("list", "列表"):
-            await self._cmd_workspace_list(event)
-        elif action in ("select", "选择", "切换"):
-            await self._cmd_workspace_select(event, rest)
-        elif action in ("create", "新建"):
-            await self._cmd_workspace_create(event, rest)
-        else:
-            await self._reply(
-                event,
-                "用法：\n"
-                "/multica workspace list\n"
-                "/multica workspace select <id|slug>\n"
-                "/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景信息]",
-            )
 
     async def _cmd_workspace_list(self, event: AstrMessageEvent) -> None:
         """列出当前 Token 可访问的所有工作区。"""
@@ -303,44 +496,27 @@ class Main(WebApiMixin, Star):
         """创建工作区（name 必填，slug 缺省时按名称自动生成）。"""
         from .multica_client import MulticaClient
 
-        parts = (args or "").split()
-        if not parts:
+        flags = ("--slug", "--desc", "--context")
+        name, values = self._parse_flags(args, flags)
+        if not (args or "").strip():
             await self._reply(
                 event,
-                "用法：/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景信息]\n"
+                "用法：/multica workspace create <名称> [--slug slug] "
+                "[--desc 描述] [--context 背景信息]\n"
                 "示例：/multica workspace create 项目A --slug project-a --desc 测试环境",
             )
             return
 
-        name = ""
-        slug = ""
-        desc = ""
-        context = ""
-        flags = ("--slug", "--desc", "--context")
-        flag_indexes = {f: (parts.index(f) if f in parts else -1) for f in flags}
-        present = sorted((i, f) for f, i in flag_indexes.items() if i >= 0)
-        if present:
-            first_flag_idx = present[0][0]
-            name = " ".join(parts[:first_flag_idx]).strip()
-            for n, (idx, flag) in enumerate(present):
-                end = present[n + 1][0] if n + 1 < len(present) else len(parts)
-                value = " ".join(parts[idx + 1:end]).strip()
-                if not value:
-                    await self._reply(event, f"❌ 参数 {flag} 缺少值")
-                    return
-                if flag == "--slug":
-                    slug = value
-                elif flag == "--desc":
-                    desc = value
-                elif flag == "--context":
-                    context = value
-        else:
-            name = " ".join(parts).strip()
+        missing = [f for f in flags if f in values and not values[f]]
+        if missing:
+            await self._reply(event, f"❌ 参数 {missing[0]} 缺少值")
+            return
 
         if not name:
             await self._reply(event, "❌ 工作区名称不能为空")
             return
 
+        slug = values.get("--slug", "").strip()
         if not slug:
             slug = self._slugify(name)
         if not slug:
@@ -355,34 +531,13 @@ class Main(WebApiMixin, Star):
         result = await client.create_workspace(
             name=name,
             slug=slug,
-            description=desc,
-            context=context,
+            description=values.get("--desc", ""),
+            context=values.get("--context", ""),
         )
         if result["ok"]:
             await self._reply(event, f"✅ {result['message']}")
         else:
             await self._reply(event, f"❌ 创建失败：{result['message']}")
-
-    async def _cmd_project(self, event: AstrMessageEvent, args: str) -> None:
-        """处理 /multica project 子命令（list / select / create）。"""
-        parts = args.split()
-        action = parts[0] if parts else ""
-        rest = args[len(action):].strip() if action else ""
-
-        if action in ("list", "列表"):
-            await self._cmd_project_list(event)
-        elif action in ("select", "选择", "切换"):
-            await self._cmd_project_select(event, rest)
-        elif action in ("create", "新建"):
-            await self._cmd_project_create(event, rest)
-        else:
-            await self._reply(
-                event,
-                "用法：\n"
-                "/multica project list\n"
-                "/multica project select <id>\n"
-                "/multica project create <标题> [--desc 描述]",
-            )
 
     async def _cmd_project_list(self, event: AstrMessageEvent) -> None:
         """列出当前工作区下的所有项目。"""
@@ -452,8 +607,9 @@ class Main(WebApiMixin, Star):
         """创建项目（title 必填，--desc 为可选描述）。"""
         from .multica_client import MulticaClient
 
-        parts = (args or "").split()
-        if not parts:
+        flags = ("--desc",)
+        title, values = self._parse_flags(args, flags)
+        if not (args or "").strip():
             await self._reply(
                 event,
                 "用法：/multica project create <标题> [--desc 描述]\n"
@@ -461,45 +617,19 @@ class Main(WebApiMixin, Star):
             )
             return
 
-        desc = ""
-        if "--desc" in parts:
-            idx = parts.index("--desc")
-            title = " ".join(parts[:idx]).strip()
-            desc = " ".join(parts[idx + 1:]).strip()
-        else:
-            title = " ".join(parts).strip()
-
         if not title:
             await self._reply(event, "❌ 项目标题不能为空")
             return
 
         client = MulticaClient(self.cfg)
-        result = await client.create_project(title=title, description=desc)
+        result = await client.create_project(
+            title=title,
+            description=values.get("--desc", ""),
+        )
         if result["ok"]:
             await self._reply(event, f"✅ {result['message']}")
         else:
             await self._reply(event, f"❌ 创建失败：{result['message']}")
-
-    @staticmethod
-    def _slugify(name: str) -> str:
-        """按名称自动生成 slug：仅保留字母/数字/空格，空格转连字符，转小写。"""
-        import re
-
-        cleaned = re.sub(r"[^a-zA-Z0-9 ]", "", name).strip().lower()
-        return re.sub(r"\s+", "-", cleaned)
-
-    def _save_cfg(self) -> None:
-        """将当前 self.cfg 原子写入插件自有 config.json。"""
-        try:
-            from .config import save_plugin_config
-
-            data_dir = getattr(self, "_data_dir", None) or str(
-                Path(get_astrbot_data_path()) / "plugin_data" / self.name
-            )
-            save_plugin_config(data_dir, self.cfg)
-        except Exception as e:
-            logger.error("[multica_bridge] 保存配置失败: %s", e)
-            raise
 
     async def _cmd_inbox(self, event: AstrMessageEvent, args: str) -> None:
         """处理 /multica inbox 子命令：展示最近 Issue 与进展。"""
@@ -554,7 +684,14 @@ class Main(WebApiMixin, Star):
             await self._reply(event, f"📭 {empty_msg}")
             return
 
-        names = await client.resolve_assignee_names()
+        # 只为当前展示的 Issue 解析指派人名称，避免多余请求
+        assignee_ids = {
+            str(i.get("assignee_id"))
+            for i in issues
+            if i.get("assignee_id")
+        }
+        names = await client.resolve_assignee_names(assignee_ids)
+
         head = f"📥 Multica 收件箱（最近 {len(issues)} 条"
         if status_filter == "open":
             head += " · 未完成"
@@ -588,10 +725,9 @@ class Main(WebApiMixin, Star):
                 line += f" ({name})"
         return line
 
-    @staticmethod
-    async def _reply(event: AstrMessageEvent, text: str) -> None:
+    async def _reply(self, event: AstrMessageEvent, text: str) -> None:
         """向消息来源回复。"""
         try:
             await event.send(MessageChain([Plain(text)]))
         except Exception as e:
-            logger.warning("[multica_bridge] 回复消息失败: %s", e)
+            self.log.warning("[multica_bridge] 回复消息失败: %s", e)

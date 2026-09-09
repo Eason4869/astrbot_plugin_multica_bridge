@@ -14,7 +14,9 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/version-0.8.0-6366f1" alt="version 0.8.0" />
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/AstrBot-%E2%89%A54.27.2-4f8cff" alt="AstrBot >=4.27.2" />
   <img src="https://img.shields.io/badge/AstrBot-Multica%20Bridge-4f8cff" alt="AstrBot Multica Bridge" />
   <img src="https://img.shields.io/badge/Multica-API-8b5cf6" alt="Multica API" />
   <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License" />
@@ -33,20 +35,23 @@
 </p>
 
 </div>
+
 ---
 
 ## ✨ 功能
 
-- **连接测试**：一键验证 Multica API 连通性
+- **连接测试**：一键验证 Multica API 连通性，并显示当前工作区 / 项目
 - **配置热生效**：WebUI 中修改配置后即时生效，无需重载
-- **Issue 创建**：支持通过 `/multica issue create` 在聊天中直接新建 Issue
+- **Issue 创建**：支持通过 `/multica issue create` 在聊天中直接新建 Issue，
+  可指定优先级、状态、指派人、项目、截止日期与标签
 - **工作区管理**：支持通过 `/multica workspace` 列出、切换、创建工作区
 - **项目管理**：支持通过 `/multica project` 列出、切换、创建项目，新建 Issue 默认进入所选项目
 - **收件箱同步**：支持通过 `/multica inbox` 在聊天中查看最近 Issue 及进展
 - **Token 安全**：API 返回配置时自动脱敏敏感字段，防止误保存覆盖
 - **会话过滤**：支持群聊/私聊的黑白名单模式，精准控制插件生效范围
-- **命令交互**：支持 `/multica` 系列指令，在聊天中直接操作
-- **权限管理**：`/multica` 作为 AstrBot 一等指令，可在「指令管理」中设为仅管理员等
+- **命令交互**：`/multica` 指令组，子指令在 AstrBot「指令管理」中独立可见
+- **权限管理**：可对每条子指令**分别**设置「仅管理员 / 成员可」，实现最小权限
+- **中英双语**：WebUI 文案随 AstrBot 界面语言自动切换（zh-CN / en-US）
 
 ---
 
@@ -140,9 +145,10 @@ JSON 输出中的 `id` 字段即为完整 UUID；而使用聊天指令时，标�
 
 | 指令 | 说明 |
 |------|------|
+| `/multica` | 不带子指令时，由 AstrBot 自动渲染指令树 |
 | `/multica help` | 显示帮助信息 |
-| `/multica status` | 检查 Multica 连接状态 |
-| `/multica issue create <标题> [--desc 描述]` | 通过 API 新建 Issue（不依赖本机 CLI） |
+| `/multica status` | 检查连接、当前工作区与项目、Token 脱敏信息 |
+| `/multica issue create <标题> [选项]` | 通过 API 新建 Issue（不依赖本机 CLI） |
 | `/multica workspace list` | 列出当前 Token 可访问的所有工作区 |
 | `/multica workspace select <id\|slug>` | 切换当前工作区（持久化到插件 config.json，重启后仍生效） |
 | `/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景]` | 创建工作区（slug 缺省时按名称自动生成） |
@@ -151,30 +157,60 @@ JSON 输出中的 `id` 字段即为完整 UUID；而使用聊天指令时，标�
 | `/multica project create <标题> [--desc 描述]` | 创建项目（title 必填，可选描述） |
 | `/multica inbox [数量] [open\|done]` | 查看收件箱：最近 Issue（默认 10 条，按更新时间倒序）；`open` 只看未完成，`done` 只看已完成/已取消 |
 
+#### `issue create` 可选参数
+
+| 参数 | 取值 | 说明 |
+|------|------|------|
+| `--desc` | 文本 | Issue 描述 |
+| `--priority` | `紧急` / `高` / `中` / `低`（或 `urgent` / `high` / `medium` / `low`） | 优先级 |
+| `--status` | `backlog` / `todo` / `in_progress` / `in_review` / `done` / `cancelled` | 初始状态 |
+| `--assignee` | 指派人 id | 指派给智能体 / 团队 / 成员 |
+| `--project` | 项目 id | 覆盖当前所选项目 |
+| `--due` | `YYYY-MM-DD` | 截止日期 |
+| `--labels` | `标签1,标签2` | 标签（中英文逗号均可） |
+
+```text
+/multica issue create 修复登录失败 --desc 用户反馈登录超时 --priority 高 --labels 后端,线上
+```
+
 > 提示：`/multica issue create` 直接调用 Multica HTTP API 创建 Issue，
 > 不依赖本机是否安装 Multica CLI、也不要求 CLI 加入 PATH，
 > 可避免“本机未安装 Multica”这类误报。
 
 > 提示：`/multica inbox` 同样直接调用 Multica HTTP API（`GET /api/issues`），
-> 每条包含状态图标、编号、标题、优先级与指派人，列表紧凑避免刷屏。
+> 每条包含状态图标、编号、标题、优先级与指派人，列表紧凑避免刷屏；
+> 指派人名称带 5 分钟缓存，不会每次重复请求。
 
-指令受会话过滤配置（黑白名单）控制。
+指令受会话过滤配置（黑白名单）控制；插件停用时会直接提示而不是静默无响应。
 
-### 🔐 管理员权限
+### 🔐 权限管理
 
-`/multica` 通过 AstrBot 标准的指令注册方式挂载，属于 AstrBot 的**一等指令**。
-你可以在 **AstrBot WebUI → 指令管理** 中找到 `/multica`，并一键将其设为
-**仅管理员** 或 **成员可**，实现 ChatOps 指令的权限回收。
+`/multica` 是一个 AstrBot **指令组**，其子指令在
+**AstrBot WebUI → 指令管理** 中各自独立可见，可以**分别**设置
+「仅管理员」或「成员可」。例如：
+
+| 子指令 | 建议权限 |
+|--------|----------|
+| `multica inbox` / `multica status` / `multica help` | 成员可 |
+| `multica workspace create` / `multica project create` | 仅管理员 |
+| `multica workspace select` / `multica project select` | 仅管理员（会改写持久化配置） |
+
+> 权限配置保存在 AstrBot 的 `alter_cmd` 中，重启后自动回植到对应指令。
 
 ---
 
 ## 🔌 API 端点
 
+WebUI 设置页通过 AstrBot 的页面 bridge 调用以下插件 API：
+
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/plug/astrbot_plugin_multica_bridge/config` | 获取当前配置（token 脱敏） |
-| POST | `/api/plug/astrbot_plugin_multica_bridge/actions/save_config` | 保存配置 |
-| POST | `/api/plug/astrbot_plugin_multica_bridge/actions/test_connection` | 测试连接 |
+| GET | `/api/v1/plugins/extensions/<插件名>/config` | 获取当前配置（token 脱敏） |
+| POST | `/api/v1/plugins/extensions/<插件名>/actions/save_config` | 保存配置（增量） |
+| POST | `/api/v1/plugins/extensions/<插件名>/actions/test_connection` | 测试连接 |
+
+> 旧版兼容路径同样可用：`/api/plug/<插件名>/config` 等（GET/POST）。
+> 其中 `<插件名>` 即插件目录名（默认 `astrbot_plugin_multica_bridge`）。
 
 ---
 
@@ -187,7 +223,24 @@ cd astrbot_plugin_multica_bridge
 
 # 安装到 AstrBot（开发模式）
 # 将本目录软链接或复制到 AstrBot/data/plugins/
+
+# 本地校验（可选）
+python -m pip install ruff pytest pyyaml
+ruff check .
+python -m pytest
 ```
+
+仓库结构：
+
+| 路径 | 说明 |
+|------|------|
+| `main.py` | 插件入口：指令组、子指令实现与统一入口守卫 |
+| `multica_client.py` | Multica API 客户端（HTTP，无需本地 CLI） |
+| `web_api.py` | 插件 Pages 的 REST 接口 |
+| `config.py` | 配置默认值、读写与类型强转 |
+| `pages/settings/index.html` | WebUI 设置页（自包含单文件） |
+| `.astrbot-plugin/i18n/` | WebUI 中英文文案 |
+| `tests/` | 单元测试与资产一致性测试 |
 
 ---
 
@@ -199,7 +252,7 @@ cd astrbot_plugin_multica_bridge
 
 ## 📄 许可证
 
-MIT
+本项目基于 [MIT License](LICENSE) 开源。
 
 ---
 

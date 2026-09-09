@@ -1,5 +1,56 @@
 # Changelog
 
+## [0.8.0] - 2026-08-21
+
+### Added
+
+- **指令组重构**：`/multica` 改为 AstrBot 标准指令组，子指令按树形注册：
+  `help` / `status` / `inbox`、`issue create`、`workspace list|select|create`、
+  `project list|select|create`。每条子指令在「指令管理」中都是独立条目，
+  可**分别**设置「仅管理员 / 成员可」（例如 `inbox` 放开给成员，
+  `workspace create` 收紧给管理员）；直接发送 `/multica` 会由 AstrBot
+  自动渲染指令树。
+- `issue create` 补齐可选参数：`--priority`（支持中文 紧急/高/中/低）、
+  `--status`、`--assignee`、`--project`、`--due`、`--labels`（逗号分隔）。
+- `status` 现在展示当前工作区名称/id/slug、项目标题、脱敏 Token 与 API 地址。
+- WebUI 支持中英双语（`.astrbot-plugin/i18n/{zh-CN,en-US}.json`），
+  通过 bridge 的 `t()` 自动跟随 AstrBot 界面语言。
+- 新增 `requirements.txt`、`LICENSE`、`ruff` 配置、GitHub Actions CI 与
+  `tests/` 单元测试（配置强转、会话过滤、工作区/项目查找、页面与文档一致性）。
+
+### Fixed
+
+- **修复布尔配置强转错误**：旧实现 `bool(value)` 会把字符串 `"false"` 判为
+  `True`（非空字符串恒真），直接调 REST 保存时会写错值；改为按
+  `1/true/yes/on` 等白名单解析，无法识别时回退默认值。
+- **修复 WebUI 暗色模式失效**：旧代码依赖 `bridge.isDark` 与
+  `bridge.onThemeChange`，而 AstrBot 的页面 bridge 并不提供这两个成员，
+  导致暗色主题永远不生效；改用 `getContext()` / `onContext()` 读取
+  `isDark`，并让样式同时匹配 `[data-theme="dark"]`。
+- **修复 WebUI 保存覆盖聊天侧配置**：旧实现每次保存都回写整份配置，
+  若用户在聊天中用 `workspace select` 切换了工作区，再改任意设置就会把
+  旧的 `workspace_id` 写回；改为只提交被改动过的字段（增量保存）。
+- 修复 Web API 注册与请求异常被静默吞掉（无日志）的问题，改为记录错误日志。
+- `inbox` 性能：指派人名称解析新增 TTL 缓存，并只查询当前展示的 Issue
+  涉及的 id，避免每次额外发起 3 个请求。
+
+### Changed
+
+- 请求体读取改用 AstrBot 官方 `astrbot.api.web.request`（保留 Quart 回退）。
+- Web API 路由前缀按插件目录名动态生成，插件目录改名后不再全部 404。
+- 日志改用 Star 提供的插件级 logger（缺失时回退全局 logger）。
+- `astrbot_version` 提升到 `>=4.27.2`：指令管理的权限回植与插件 Pages
+  Web API 依赖该版本。
+- 版本提升至 0.8.0。
+
+### Why
+
+- 单一 `/multica` 指令只能整体授权，无法满足“查看类指令放开、写入类指令收紧”
+  的实际诉求；AstrBot 指令组天然支持逐条授权。
+- 用户反馈暗色界面下设置页仍是亮色，排查确认 bridge 并不暴露
+  `isDark` / `onThemeChange`。
+- 新增 CI 与测试用于锁定上述修复，防止回归。
+
 ## [0.7.0] - 2026-08-20
 
 ### Fixed

@@ -1,12 +1,13 @@
 name: astrbot_plugin_multica_bridge
-desc: 将 AstrBot 接入 Multica 平台，支持连接测试、聊天创建 Issue、工作区管理
+desc: 将 AstrBot 接入 Multica 平台，支持连接测试、聊天创建 Issue、工作区与项目管理
 short_desc: AstrBot ↔ Multica 桥接插件
-version: 0.7.0
+version: 0.8.0
 author: 彧晟Eason
 logo: logo.png
 repo: "https://github.com/Eason4869/astrbot_plugin_multica_bridge"
 display_name: Multica桥接
-astrbot_version: ">=4.24.2"
+# 依赖 AstrBot 的指令管理（alter_cmd 权限回植）与插件 Pages Web API
+astrbot_version: ">=4.27.2"
 pages:
   - name: settings
     title: Multica 桥接设置
