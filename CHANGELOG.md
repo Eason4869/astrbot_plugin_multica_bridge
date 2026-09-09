@@ -33,6 +33,10 @@
 - 修复 Web API 注册与请求异常被静默吞掉（无日志）的问题，改为记录错误日志。
 - `inbox` 性能：指派人名称解析新增 TTL 缓存，并只查询当前展示的 Issue
   涉及的 id，避免每次额外发起 3 个请求。
+- **修复 README 图片在 AstrBot 中不显示**：AstrBot 直接用 markdown-it 渲染
+  插件目录下的 README，且不会重写相对路径，`assets/banner.jpg` 之类的写法
+  会解析到 Dashboard 域名下导致 404；已全部改为绝对 URL
+  （`raw.githubusercontent.com`），仓库内文档链接同理。
 
 ### Changed
 

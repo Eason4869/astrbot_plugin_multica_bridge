@@ -4,7 +4,7 @@
 
 
 <p align="center">
-  <img src="logo.svg" width="110" height="110" alt="Multica Bridge Logo" />
+  <img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/main/logo.svg" width="110" height="110" alt="Multica Bridge Logo" />
 </p>
 
 <h1 align="center">AstrBot Multica 桥接插件</h1>
@@ -25,13 +25,13 @@
 </p>
 
 <p align="center">
-  <img src="assets/banner-anime.jpg" width="640" alt="Anime banner" />
+  <img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/main/assets/banner-anime.jpg" width="640" alt="Anime banner" />
 </p>
 
 将 AstrBot QQ 机器人接入 [Multica](https://multica.ai) 平台，实现连接测试、ChatOps 等功能。
 
 <p align="center">
-  <img src="assets/divider.gif" width="480" alt="数据流动分隔线" />
+  <img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/main/assets/divider.gif" width="480" alt="数据流动分隔线" />
 </p>
 
 </div>
@@ -246,18 +246,18 @@ python -m pytest
 
 ## 📝 更新日志
 
-详见 [CHANGELOG.md](CHANGELOG.md)
+详见 [CHANGELOG.md](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/CHANGELOG.md)
 
 ---
 
 ## 📄 许可证
 
-本项目基于 [MIT License](LICENSE) 开源。
+本项目基于 [MIT License](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/LICENSE) 开源。
 
 ---
 
 <p align="center">
-  <img src="assets/banner-anime-2.webp" width="360" alt="Thanks for reading" />
+  <img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/main/assets/banner-anime-2.webp" width="360" alt="Thanks for reading" />
 </p>
 
 <p align="center">

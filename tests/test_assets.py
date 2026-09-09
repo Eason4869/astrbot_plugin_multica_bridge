@@ -124,6 +124,24 @@ def test_readme_documents_every_command() -> None:
         assert command in readme, f"README 未收录指令: {command}"
 
 
+def test_readme_images_use_absolute_urls() -> None:
+    """AstrBot 直接用 markdown-it 渲染 README，且不做相对路径重写。
+
+    相对路径（如 ``assets/banner.jpg``）会被解析到 Dashboard 域名下从而 404，
+    因此图片与仓库内文档链接都必须写成绝对 URL。
+    """
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    relative_images = re.findall(r'<img[^>]*\ssrc="(?!https?://)([^"]+)"', readme)
+    assert not relative_images, f"README 图片必须使用绝对 URL: {relative_images}"
+
+    markdown_images = re.findall(r"!\[[^\]]*\]\((?!https?://)([^)]+)\)", readme)
+    assert not markdown_images, f"README 图片必须使用绝对 URL: {markdown_images}"
+
+    local_links = re.findall(r"\]\((?!https?://)([^)]+)\)", readme)
+    assert not local_links, f"README 内部链接应使用绝对 URL: {local_links}"
+
+
 def test_readme_avoids_internal_ticket_ids() -> None:
     """README 不应出现内部任务编号（形如 WS-12）。"""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
