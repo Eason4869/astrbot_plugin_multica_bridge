@@ -138,7 +138,7 @@ def test_readme_images_use_absolute_urls() -> None:
     markdown_images = re.findall(r"!\[[^\]]*\]\((?!https?://)([^)]+)\)", readme)
     assert not markdown_images, f"README 图片必须使用绝对 URL: {markdown_images}"
 
-    local_links = re.findall(r"\]\((?!https?://)([^)]+)\)", readme)
+    local_links = re.findall(r"\]\((?!https?://|#)([^)]+)\)", readme)
     assert not local_links, f"README 内部链接应使用绝对 URL: {local_links}"
 
 
