@@ -20,6 +20,19 @@
 - 设置页新增「自然语言控制」分区；帮助文案、README、i18n 同步更新。
 - 新增 `nl_control.py` 意图解析模块与单元测试。
 
+### Fixed
+
+- **允许 README 页内锚点**：0.8.1 起目录使用 `(#-功能)` 形式的页内锚点，
+  而 `test_readme_images_use_absolute_urls` 会把它们当成相对路径导致 CI
+  失败。纯 `#anchor` 在 markdown 中合法，且不会解析到 AstrBot Dashboard
+  域名下，测试改为允许页内锚点；README 目录链接同时改为仓库绝对 URL，
+  与 AstrBot 渲染行为对齐。
+
+### Changed
+
+- GitHub Actions CI：`actions/checkout` / `actions/setup-python` 升到当前
+  major，消除 ubuntu-latest 上 Node.js 20 的弃用警告。
+
 ### Why
 
 - 结构化 `/multica issue create …` 参数齐全但门槛高，群聊里用户更习惯
