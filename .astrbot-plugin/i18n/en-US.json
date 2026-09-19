@@ -39,6 +39,17 @@
       "whitelist": "Whitelist",
       "disabled": "Off"
     },
+    "nl": {
+      "title": "Natural language control",
+      "desc": "Messages containing the keyword are parsed automatically — no slash command needed",
+      "enabled": "Enable natural language control",
+      "enabledHint": "When off, only /multica commands are handled",
+      "keyword": "Trigger keyword",
+      "keywordHint": "Intent recognition runs only when the message contains this keyword (case-insensitive). Default: multica",
+      "llm": "Use LLM when rules fail",
+      "llmHint": "Local rules run first; complex sentences can fall back to the current AstrBot LLM",
+      "note": "Examples: multica create issue: fix login, priority high · multica inbox 10 open · multica switch project frontend"
+    },
     "perm": {
       "note": "💡 Tip: in AstrBot's Command Management you can set each command to \"admin only\" individually — e.g. restrict workspace create / project create to admins while leaving inbox open to members."
     },
@@ -55,7 +66,8 @@
       "projList": "List projects in the current workspace",
       "projSelect": "Switch the current project (persisted)",
       "projCreate": "Create a project",
-      "inbox": "Inbox: latest issues and progress"
+      "inbox": "Inbox: latest issues and progress",
+      "nl": "Natural language control (message contains the keyword)"
     },
     "test": {
       "title": "Connection test",

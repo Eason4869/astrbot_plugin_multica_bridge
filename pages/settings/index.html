@@ -342,6 +342,51 @@
       </div>
     </section>
 
+    <!-- Natural Language -->
+    <section class="card">
+      <div class="card-head">
+        <span class="ic ic-violet">✨</span>
+        <div>
+          <h2 data-i18n="settings.nl.title">自然语言控制</h2>
+          <div class="card-desc" data-i18n="settings.nl.desc">消息中包含关键词即可自动识别意图，无需斜杠指令</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div>
+          <div class="field-label" data-i18n="settings.nl.enabled">启用自然语言控制</div>
+          <div class="field-hint" data-i18n="settings.nl.enabledHint">关闭后仅响应 /multica 指令</div>
+        </div>
+        <label class="switch field-control">
+          <input type="checkbox" id="field-nl_enabled" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="field">
+        <div>
+          <div class="field-label" data-i18n="settings.nl.keyword">触发关键词</div>
+          <div class="field-hint" data-i18n="settings.nl.keywordHint">消息中包含该词（不区分大小写）才会触发意图识别，默认 multica</div>
+        </div>
+        <input type="text" id="field-nl_keyword" class="field-control mono" placeholder="multica" />
+      </div>
+
+      <div class="field">
+        <div>
+          <div class="field-label" data-i18n="settings.nl.llm">规则失败时使用 LLM</div>
+          <div class="field-hint" data-i18n="settings.nl.llmHint">优先本地规则解析；复杂句子可选用 AstrBot 当前 LLM 回退</div>
+        </div>
+        <label class="switch field-control">
+          <input type="checkbox" id="field-nl_llm_enabled" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="note" data-i18n="settings.nl.note">
+        示例：multica 建个issue：修复登录，优先级高 · multica 收件箱 10 open · multica 切换到项目 前端重构
+      </div>
+    </section>
+
     <!-- Commands -->
     <section class="card">
       <div class="card-head">
@@ -363,6 +408,7 @@
         <tr><td><code class="cmd">/multica project select &lt;id&gt;</code></td><td data-i18n="settings.cmd.projSelect">切换当前项目（持久化）</td></tr>
         <tr><td><code class="cmd">/multica project create &lt;标题&gt; [--desc ..]</code></td><td data-i18n="settings.cmd.projCreate">创建项目</td></tr>
         <tr><td><code class="cmd">/multica inbox [数量] [open|done]</code></td><td data-i18n="settings.cmd.inbox">收件箱：最近 Issue 及进展</td></tr>
+        <tr><td><code class="cmd">multica 建个issue：…</code></td><td data-i18n="settings.cmd.nl">自然语言控制（消息含关键词即可）</td></tr>
       </table>
     </section>
 
@@ -388,8 +434,8 @@
 
   <script>
     (function () {
-      const FIELDS = ['enabled', 'api_url', 'token', 'workspace_id', 'project_id', 'group_chat_mode', 'group_chat_list', 'private_chat_mode', 'private_chat_list'];
-      const BOOLS = new Set(['enabled']);
+      const FIELDS = ['enabled', 'api_url', 'token', 'workspace_id', 'project_id', 'group_chat_mode', 'group_chat_list', 'private_chat_mode', 'private_chat_list', 'nl_enabled', 'nl_keyword', 'nl_llm_enabled'];
+      const BOOLS = new Set(['enabled', 'nl_enabled', 'nl_llm_enabled']);
       const LISTS = new Set(['group_chat_list', 'private_chat_list']);
       const SELECTS = new Set(['group_chat_mode', 'private_chat_mode']);
 
@@ -499,7 +545,9 @@
             const el = document.getElementById('field-' + k);
             if (!el) return;
             if (BOOLS.has(k)) {
-              el.checked = !!cfg[k];
+              el.checked = k === 'nl_enabled' || k === 'nl_llm_enabled'
+                ? cfg[k] !== false
+                : !!cfg[k];
             } else if (LISTS.has(k)) {
               el.value = listToText(cfg[k]);
             } else if (SELECTS.has(k)) {

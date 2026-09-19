@@ -8,14 +8,14 @@
 
 *AstrBot × Multica · 一键接入 · ChatOps 赋能*
 
-<img src="https://img.shields.io/badge/version-0.8.1-6366f1" alt="version 0.8.1" />
+<img src="https://img.shields.io/badge/version-0.9.0-6366f1" alt="version 0.9.0" />
 <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
 <img src="https://img.shields.io/badge/AstrBot-%E2%89%A54.27.2-4f8cff" alt="AstrBot >=4.27.2" />
 <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License" />
 
 <img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/main/assets/banner-anime.jpg" width="640" alt="Anime banner" />
 
-将 AstrBot QQ 机器人接入 [Multica](https://multica.ai)，在聊天里完成连接测试、建 Issue、管工作区/项目、看收件箱。
+将 AstrBot QQ 机器人接入 [Multica](https://multica.ai)，在聊天里完成连接测试、建 Issue、管工作区/项目、看收件箱；也支持**自然语言控制**（消息含 `multica` 即可，无需斜杠）。
 
 </div>
 
@@ -23,15 +23,16 @@
 
 ## 目录
 
-1. [功能](#-功能)
-2. [安装](#-安装)
-3. [配置](#️-配置)
-4. [获取 API / Token](#-获取-api--token)
-5. [指令](#-指令)
-6. [权限](#-权限)
-7. [API 端点](#-api-端点)
-8. [开发](#-开发)
-9. [更新日志 / 许可](#-更新日志--许可)
+1. [功能](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#-功能)
+2. [安装](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#-安装)
+3. [配置](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#%EF%B8%8F-配置)
+4. [自然语言控制](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#%EF%B8%8F-自然语言控制)
+5. [获取 API / Token](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#-获取-api--token)
+6. [指令](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#-指令)
+7. [权限](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#-权限)
+8. [API 端点](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#-api-端点)
+9. [开发](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#-开发)
+10. [更新日志 / 许可](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/README.md#-更新日志--许可)
 
 ---
 
@@ -48,6 +49,7 @@
 | 过滤 | 群聊 / 私聊黑名单、白名单或关闭 |
 | 权限 | 子指令在 AstrBot「指令管理」中独立配置「仅管理员 / 成员可」 |
 | 语言 | 设置页中英文，跟随 AstrBot 界面语言 |
+| 自然语言 | 消息含关键词 `multica` 即可识别意图（规则优先，可选 LLM 回退） |
 
 ---
 
@@ -93,6 +95,35 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 | `group_chat_list` | list | `[]` | 群聊 ID 列表 |
 | `private_chat_mode` | str | `blacklist` | 私聊：同上 |
 | `private_chat_list` | list | `[]` | 用户 ID 列表 |
+| `nl_enabled` | bool | `true` | 启用自然语言控制 |
+| `nl_keyword` | str | `multica` | 触发关键词（不区分大小写） |
+| `nl_llm_enabled` | bool | `true` | 规则解析失败时是否走 LLM 回退 |
+
+---
+
+## 🗣️ 自然语言控制
+
+消息中**包含关键词**（默认 `multica`）即可触发意图识别，无需 `/` 前缀：
+
+```text
+multica 建个issue：修复登录失败，优先级高
+multica 创建issue 优化首屏 --priority 高 --labels 前端
+multica 收件箱 10 open
+multica 切换到项目 前端重构
+multica 新建工作区 测试环境
+multica status
+multica 帮助
+```
+
+解析策略：
+
+1. **规则优先**：本地正则/关键词识别常见中英文口语，并抽取标题、描述、
+   优先级、状态、标签、截止日期等字段，复用既有子指令逻辑执行；
+2. **LLM 可选回退**：规则无法识别时，若开启 `nl_llm_enabled`，则调用
+   AstrBot 当前配置的 LLM Provider，将复杂句子解析为结构化意图；
+3. **不误伤闲聊**：仅提到 Multica 的提问（如「multica是什么」）不会被拦截。
+
+也可在 WebUI 设置页开关该功能、修改关键词。
 
 ---
 
@@ -141,6 +172,7 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 | `/multica project list` | 列出项目 |
 | `/multica project select <id>` | 切换项目（新建 Issue 默认进该项目） |
 | `/multica project create <标题> [--desc …]` | 新建项目 |
+| `multica <自然语言…>` | 无需斜杠，消息含关键词即可（见「自然语言控制」） |
 
 ### `issue create` 选项
 
@@ -211,7 +243,8 @@ python -m pytest
 
 | 路径 | 说明 |
 |------|------|
-| `main.py` | 指令组与子指令 |
+| `main.py` | 指令组、子指令与自然语言监听 |
+| `nl_control.py` | 自然语言意图解析（规则 + LLM 回退） |
 | `multica_client.py` | Multica HTTP 客户端 |
 | `web_api.py` | 设置页 REST |
 | `config.py` | 配置读写与类型转换 |

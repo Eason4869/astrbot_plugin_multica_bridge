@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.9.0] - 2026-09-19
+
+### Added
+
+- **自然语言控制**：消息中包含关键词（默认 `multica`，可配置）即可自动识别
+  Multica 意图，无需 `/` 指令前缀。例如：
+  - `multica 建个issue：修复登录，优先级高`
+  - `multica 收件箱 10 open`
+  - `multica 切换到项目 前端重构`
+  - `multica status` / `multica 帮助`
+- 解析策略为**规则优先 + 可选 LLM 回退**：
+  - 本地规则覆盖常见中英文口语与无斜杠指令写法，抽取标题/描述/优先级/
+    状态/标签/截止日期等字段后，复用既有子指令实现；
+  - 规则无法识别时，若启用 `nl_llm_enabled`，则调用 AstrBot 当前 LLM
+    Provider 将复杂句子解析为结构化意图 JSON；
+  - 仅提及关键词的闲聊（如「multica是什么」）不拦截，仍交回 LLM 对话。
+- 新增配置项（WebUI 热生效）：`nl_enabled`、`nl_keyword`、`nl_llm_enabled`。
+- 设置页新增「自然语言控制」分区；帮助文案、README、i18n 同步更新。
+- 新增 `nl_control.py` 意图解析模块与单元测试。
+
+### Why
+
+- 结构化 `/multica issue create …` 参数齐全但门槛高，群聊里用户更习惯
+  直接说「帮我建个 issue」。此前只能依赖主 LLM 误调 shell/CLI，既不可靠
+  又易失败；本版把控制面收进插件内部，规则兜底、LLM 可选。
+
 ## [0.8.1] - 2026-09-09
 
 ### Fixed

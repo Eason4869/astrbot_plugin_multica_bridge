@@ -39,6 +39,17 @@
       "whitelist": "白名单",
       "disabled": "关闭"
     },
+    "nl": {
+      "title": "自然语言控制",
+      "desc": "消息中包含关键词即可自动识别意图，无需斜杠指令",
+      "enabled": "启用自然语言控制",
+      "enabledHint": "关闭后仅响应 /multica 指令",
+      "keyword": "触发关键词",
+      "keywordHint": "消息中包含该词（不区分大小写）才会触发意图识别，默认 multica",
+      "llm": "规则失败时使用 LLM",
+      "llmHint": "优先本地规则解析；复杂句子可选用 AstrBot 当前 LLM 回退",
+      "note": "示例：multica 建个issue：修复登录，优先级高 · multica 收件箱 10 open · multica 切换到项目 前端重构"
+    },
     "perm": {
       "note": "💡 权限提醒：可在 AstrBot「指令管理」中把每条指令分别设为「仅管理员」，例如收紧 workspace create / project create 给管理员，而把 inbox 放开给成员。"
     },
@@ -55,7 +66,8 @@
       "projList": "列出当前工作区的项目",
       "projSelect": "切换当前项目（持久化）",
       "projCreate": "创建项目",
-      "inbox": "收件箱：最近 Issue 及进展"
+      "inbox": "收件箱：最近 Issue 及进展",
+      "nl": "自然语言控制（消息含关键词即可）"
     },
     "test": {
       "title": "连接测试",

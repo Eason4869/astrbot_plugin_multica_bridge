@@ -25,6 +25,9 @@ REQUIRED_IDS = [
     "field-group_chat_list",
     "field-private_chat_mode",
     "field-private_chat_list",
+    "field-nl_enabled",
+    "field-nl_keyword",
+    "field-nl_llm_enabled",
     "btn-test",
     "test-result",
     "toast",
@@ -120,8 +123,10 @@ def test_readme_documents_every_command() -> None:
         "/multica project select",
         "/multica project create",
         "/multica inbox",
+        "自然语言控制",
+        "nl_enabled",
     ):
-        assert command in readme, f"README 未收录指令: {command}"
+        assert command in readme, f"README 未收录: {command}"
 
 
 def test_readme_images_use_absolute_urls() -> None:

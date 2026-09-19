@@ -104,12 +104,21 @@ def _install_astrbot_stubs() -> None:
             self.logger = logging.getLogger("astrbot_stub.plugin")
 
     filter_mod = types.ModuleType("astrbot.api.event.filter")
+
+    def _event_message_type(_type=None, **_kwargs):
+        def decorator(fn):
+            return fn
+
+        return decorator
+
     event_mod = types.ModuleType("astrbot.api.event")
     event_mod.AstrMessageEvent = AstrMessageEvent
     event_mod.MessageChain = MessageChain
     event_mod.filter = types.SimpleNamespace(
         command=_register_command,
         command_group=_register_command_group,
+        event_message_type=_event_message_type,
+        EventMessageType=types.SimpleNamespace(ALL="ALL", GROUP="GROUP", PRIVATE="PRIVATE"),
     )
     star_mod = types.ModuleType("astrbot.api.star")
     star_mod.Context = Context

@@ -24,6 +24,10 @@ CONFIG_DEFAULTS: dict[str, Any] = {
     "group_chat_list": [],                # 群号列表
     "private_chat_mode": "blacklist",     # "blacklist" | "whitelist" | "disabled"
     "private_chat_list": [],              # QQ 号列表
+    # 自然语言控制：消息中含关键词（默认 multica）时自动识别意图
+    "nl_enabled": True,
+    "nl_keyword": "multica",
+    "nl_llm_enabled": True,               # 规则解析失败时可选交给 LLM
 }
 
 

@@ -20,6 +20,7 @@ from astrbot.api.star import Context, Star
 from astrbot.core.message.components import Plain
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
+from .nl_control import NLIntent
 from .web_api import WebApiMixin
 
 _STATUS_ICONS = {
@@ -188,6 +189,179 @@ class Main(WebApiMixin, Star):
             partial(self._cmd_project_create, event, self._args(event, 3)),
         )
 
+    # ── 自然语言控制 ──
+    #
+    # 消息中包含关键词（默认 multica，无需斜杠）即自动识别意图并复用既有
+    # 子指令实现。规则解析优先；失败且开启 nl_llm_enabled 时再走 LLM。
+
+    @filter.event_message_type(filter.EventMessageType.ALL)
+    async def on_multica_natural_language(self, event: AstrMessageEvent) -> None:
+        """监听普通消息中的 Multica 自然语言控制请求。"""
+        try:
+            text = (event.message_str or "").strip()
+        except Exception:
+            return
+        if not text:
+            return
+        # 斜杠指令由指令组处理，避免重复执行
+        if text.startswith("/"):
+            return
+
+        cfg = getattr(self, "cfg", None) or {}
+        keyword = str(cfg.get("nl_keyword") or "multica").strip() or "multica"
+        try:
+            from .nl_control import contains_keyword
+
+            if not contains_keyword(text, keyword):
+                return
+        except Exception:
+            return
+
+        if not cfg.get("nl_enabled", True):
+            return
+        if not self._chat_allowed(event):
+            # 与历史行为一致：被过滤时不终止，交回 LLM / 其它插件
+            return
+
+        from .nl_control import parse_nl_intent
+
+        intent = parse_nl_intent(text, keyword)
+        if intent is None and cfg.get("nl_llm_enabled", True):
+            intent = await self._llm_parse_intent(event, text, keyword)
+
+        if intent is None or not intent.valid:
+            # 疑似控制请求但未解析出意图时给用法提示；
+            # 纯提问（如「multica是什么」）不拦截，交回 LLM。
+            if self._looks_like_nl_control(text, keyword):
+                await self._reply(event, self._nl_usage_text(keyword))
+                event.stop_event()
+            return
+
+        if not cfg.get("enabled", True):
+            await self._reply(
+                event,
+                "⛔ Multica 桥接当前已停用。请在 AstrBot WebUI → 插件 → "
+                "Multica桥接 → 设置 中启用后再试。",
+            )
+            event.stop_event()
+            return
+
+        await self._execute_nl_intent(event, intent)
+        event.stop_event()
+
+    def _looks_like_nl_control(self, text: str, keyword: str) -> bool:
+        try:
+            from .nl_control import _looks_like_control_query, strip_keyword
+
+            return _looks_like_control_query(strip_keyword(text, keyword))
+        except Exception:
+            return False
+
+    @staticmethod
+    def _nl_usage_text(keyword: str) -> str:
+        kw = keyword or "multica"
+        return (
+            f"识别到关键词「{kw}」，但没解析出明确操作。\n"
+            f"可直接说：\n"
+            f"• {kw} 建个issue：修复登录，优先级高\n"
+            f"• {kw} 切换到项目 前端重构\n"
+            f"• {kw} 收件箱 10 open\n"
+            f"• {kw} status / {kw} 帮助\n"
+            f"也可使用指令：/multica help"
+        )
+
+    async def _llm_parse_intent(
+        self, event: AstrMessageEvent, text: str, keyword: str
+    ) -> NLIntent | None:
+        """规则失败时，调用 AstrBot 当前 LLM Provider 做意图回退解析。"""
+        try:
+            from .nl_control import (
+                LLM_SYSTEM_PROMPT,
+                build_llm_prompt,
+                extract_json_object,
+                extract_llm_reply_text,
+                intent_from_llm_payload,
+            )
+
+            context = getattr(self, "context", None)
+            if context is None:
+                return None
+
+            umo = None
+            try:
+                umo = getattr(event, "unified_msg_origin", None)
+            except Exception:
+                umo = None
+
+            prov = None
+            getter = getattr(context, "get_using_provider_async", None)
+            if callable(getter):
+                try:
+                    prov = await getter(umo)
+                except TypeError:
+                    prov = await getter()
+            if prov is None:
+                getter_sync = getattr(context, "get_using_provider", None)
+                if callable(getter_sync):
+                    prov = getter_sync(umo)
+            if prov is None:
+                return None
+
+            prompt = build_llm_prompt(text, keyword)
+            text_chat = getattr(prov, "text_chat", None)
+            if not callable(text_chat):
+                return None
+
+            try:
+                resp = await text_chat(prompt=prompt, system_prompt=LLM_SYSTEM_PROMPT)
+            except TypeError:
+                # 旧版 Provider 可能不接受 system_prompt
+                resp = await text_chat(prompt=prompt)
+
+            reply = extract_llm_reply_text(resp)
+            intent = intent_from_llm_payload(extract_json_object(reply))
+            if intent is not None:
+                self.log.debug(
+                    "[multica_bridge] LLM 解析意图: action=%s args=%s",
+                    intent.action,
+                    intent.args,
+                )
+            return intent
+        except Exception as e:
+            self.log.warning("[multica_bridge] 自然语言 LLM 解析失败: %s", e)
+            return None
+
+    async def _execute_nl_intent(self, event: AstrMessageEvent, intent: NLIntent) -> None:
+        """把自然语言意图分发到既有子指令实现。"""
+        action = intent.action
+        args = intent.args or ""
+        try:
+            if action == "help":
+                await self._cmd_help(event)
+            elif action == "status":
+                await self._cmd_status(event)
+            elif action == "inbox":
+                await self._cmd_inbox(event, args)
+            elif action == "issue_create":
+                await self._cmd_issue_create(event, args)
+            elif action == "workspace_list":
+                await self._cmd_workspace_list(event)
+            elif action == "workspace_select":
+                await self._cmd_workspace_select(event, args)
+            elif action == "workspace_create":
+                await self._cmd_workspace_create(event, args)
+            elif action == "project_list":
+                await self._cmd_project_list(event)
+            elif action == "project_select":
+                await self._cmd_project_select(event, args)
+            elif action == "project_create":
+                await self._cmd_project_create(event, args)
+            else:
+                await self._reply(event, self._nl_usage_text("multica"))
+        except Exception as e:
+            self.log.error("[multica_bridge] 自然语言意图执行失败 (%s): %s", action, e)
+            await self._reply(event, f"❌ 执行自然语言操作失败：{e}")
+
     # ── 统一入口守卫 ──
 
     async def _run(
@@ -322,7 +496,14 @@ class Main(WebApiMixin, Star):
             "/multica project list — 列出当前工作区的项目\n"
             "/multica project select <id> — 切换当前项目（持久化）\n"
             "/multica project create <标题> [--desc 描述] — 创建项目\n"
-            "/multica inbox [数量] [open|done] — 查看收件箱（最近 Issue 及进展）"
+            "/multica inbox [数量] [open|done] — 查看收件箱（最近 Issue 及进展）\n"
+            "\n"
+            "自然语言控制（消息含关键词 multica 即可，无需斜杠）：\n"
+            "• multica 建个issue：修复登录，优先级高\n"
+            "• multica 切换到项目 前端重构\n"
+            "• multica 收件箱 10 open\n"
+            "• multica status / multica 帮助\n"
+            "规则解析优先；可在设置中关闭或启用 LLM 回退。"
         )
         await self._reply(event, help_text)
 
