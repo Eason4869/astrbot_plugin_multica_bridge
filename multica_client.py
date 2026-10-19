@@ -23,6 +23,44 @@ _ASSIGNEE_CACHE: dict[str, tuple[float, dict[str, str]]] = {}
 _ASSIGNEE_CACHE_TTL = 300.0
 
 
+class ResourceNotFound(ValueError):
+    pass
+
+
+def resolve_unique_resource(value: str, items: list[dict], name_key: str) -> dict:
+    target = value.strip().casefold()
+    records = [item for item in items if isinstance(item, dict) and item.get("id")]
+    for candidates in (
+        [i for i in records if str(i["id"]).casefold() == target],
+        [i for i in records if str(i.get(name_key) or "").casefold() == target],
+        [i for i in records if len(target) >= 8 and str(i["id"]).casefold().startswith(target)],
+    ):
+        if len(candidates) > 1:
+            raise ValueError("匹配到多个资源，请使用完整 ID：" + "、".join(str(i["id"]) for i in candidates[:8]))
+        if candidates:
+            return candidates[0]
+    raise ResourceNotFound("未找到资源，请核对名称或完整 ID")
+
+
+def apply_context_update(current: dict, patch: dict, workspaces: list[dict], projects: list[dict]) -> dict:
+    from .config import merge_config_update
+
+    updated = merge_config_update(current, patch)
+    if updated.get("workspace_id") != current.get("workspace_id") and "project_id" not in patch:
+        updated["project_id"] = ""
+    workspace = str(updated.get("workspace_id") or "")
+    if workspace:
+        workspace = str(resolve_unique_resource(workspace, workspaces, "slug")["id"])
+        updated["workspace_id"] = workspace
+    project = str(updated.get("project_id") or "")
+    if project:
+        selected = resolve_unique_resource(project, projects, "title")
+        if selected.get("workspace_id") and str(selected["workspace_id"]) != workspace:
+            raise ValueError("项目不属于选定工作区")
+        updated["project_id"] = str(selected["id"])
+    return updated
+
+
 def _is_uuid(value: str) -> bool:
     """判断字符串是否为 UUID 格式。"""
     return bool(_UUID_RE.match(value))
@@ -117,7 +155,10 @@ class MulticaClient:
                 "workspace_id": None,
                 "workspace_slug": None,
             }
-        ws, name, wsid = self._pick_workspace(result["workspaces"])
+        try:
+            ws, name, wsid = self._pick_workspace(result["workspaces"])
+        except ValueError as exc:
+            return {"ok": False, "message": str(exc), "workspace_name": None, "workspace_id": None, "workspace_slug": None}
         if name:
             self._workspace_name = str(name)
         return {
@@ -157,10 +198,11 @@ class MulticaClient:
 
         try:
             url = urljoin(self._api_url + "/", "api/workspaces")
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(trust_env=False) as session:
                 async with session.get(
                     url,
                     headers=self._headers(),
+                    allow_redirects=False,
                     timeout=aiohttp.ClientTimeout(total=10),
                 ) as resp:
                     if resp.status == 200:
@@ -180,16 +222,15 @@ class MulticaClient:
                             "message": "Token 无效，请在 Multica 控制台重新生成",
                             "workspaces": [],
                         }
-                    body = await resp.text()
                     return {
                         "ok": False,
-                        "message": f"HTTP {resp.status}: {body[:200]}",
+                        "message": f"Multica HTTP {resp.status}",
                         "workspaces": [],
                     }
         except Exception as e:
             return {
                 "ok": False,
-                "message": f"连接失败：{type(e).__name__}: {e}",
+                "message": f"连接失败：{type(e).__name__}",
                 "workspaces": [],
             }
 
@@ -198,8 +239,7 @@ class MulticaClient:
     ) -> tuple[dict[str, Any] | None, str | None, str | None]:
         """从工作区列表中挑出当前工作区。
 
-        优先匹配配置的 workspace_id（支持 UUID 或 slug），
-        未配置或未命中时取第一个，与旧版自动获取行为一致。
+        显式配置必须匹配；留空且只有一个工作区时才自动选择。
         返回 (workspace, name, id)。
         """
         want = (self._workspace_id or "").strip().lower()
@@ -210,24 +250,23 @@ class MulticaClient:
             slug = str(ws.get("slug") or "").strip().lower()
             if want and want in (wsid, slug):
                 return ws, ws.get("name") or None, ws.get("id") or None
-        ws = next((w for w in workspaces if isinstance(w, dict)), None)
-        if ws is None:
-            return None, None, None
+        if want:
+            raise ValueError("指定工作区不存在或不可访问，请在设置中重新选择")
+        choices = [w for w in workspaces if isinstance(w, dict) and w.get("id")]
+        if len(choices) != 1:
+            raise ValueError("请选择工作区：存在多个工作区" if choices else "没有可访问的工作区")
+        ws = choices[0]
         return ws, ws.get("name") or None, ws.get("id") or None
 
     def find_workspace(self, value: str, workspaces: list[dict[str, Any]]) -> dict[str, Any] | None:
         """按 id（支持完整 UUID 或前缀）或 slug（不区分大小写）查找工作区。"""
-        target = (value or "").strip().lower()
-        if not target:
+        if not value.strip():
             return None
-        for ws in workspaces:
-            if not isinstance(ws, dict):
-                continue
-            wsid = str(ws.get("id") or "").strip().lower()
-            slug = str(ws.get("slug") or "").strip().lower()
-            if target in (wsid, slug) or (len(target) >= 8 and wsid.startswith(target)):
-                return ws
-        return None
+        candidates = [dict(item, slug=item.get("slug") or item.get("name") or "") for item in workspaces if isinstance(item, dict)]
+        try:
+            return resolve_unique_resource(value, candidates, "slug")
+        except ResourceNotFound:
+            return None
 
     async def _ensure_workspace_id(self) -> None:
         """如果 workspace_id 为空或不是 UUID 格式，调用 /api/workspaces 自动获取。"""
@@ -239,7 +278,10 @@ class MulticaClient:
                 f"无法自动获取 workspace_id: {result['message']}。"
                 "请检查 api_url 和 token 是否正确，或手动填写 workspace_id。"
             )
-        _ws, _name, wsid = self._pick_workspace(result["workspaces"])
+        try:
+            _ws, _name, wsid = self._pick_workspace(result["workspaces"])
+        except ValueError as exc:
+            raise RuntimeError(str(exc)) from exc
         if wsid:
             self._workspace_id = str(wsid)
 
@@ -310,10 +352,11 @@ class MulticaClient:
                 self._api_url + "/",
                 "api/issues?" + urlencode({"workspace_id": self._workspace_id}),
             )
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(trust_env=False) as session:
                 async with session.post(
                     url,
                     headers=self._headers(),
+                    allow_redirects=False,
                     json=payload,
                     timeout=aiohttp.ClientTimeout(total=30),
                 ) as resp:
@@ -334,15 +377,14 @@ class MulticaClient:
                             "ok": False,
                             "message": "Token 无效，请在 Multica 控制台重新生成",
                         }
-                    body = await resp.text()
                     return {
                         "ok": False,
-                        "message": f"HTTP {resp.status}: {body[:300]}",
+                        "message": f"Multica HTTP {resp.status}",
                     }
         except Exception as e:
             return {
                 "ok": False,
-                "message": f"创建失败：{type(e).__name__}: {e}",
+                "message": f"创建失败：{type(e).__name__}",
             }
 
     async def create_workspace(
@@ -383,10 +425,11 @@ class MulticaClient:
 
         try:
             url = urljoin(self._api_url + "/", "api/workspaces")
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(trust_env=False) as session:
                 async with session.post(
                     url,
                     headers=self._headers(),
+                    allow_redirects=False,
                     json=payload,
                     timeout=aiohttp.ClientTimeout(total=30),
                 ) as resp:
@@ -403,15 +446,14 @@ class MulticaClient:
                             "ok": False,
                             "message": "Token 无效，请在 Multica 控制台重新生成",
                         }
-                    body = await resp.text()
                     return {
                         "ok": False,
-                        "message": f"HTTP {resp.status}: {body[:300]}",
+                        "message": f"Multica HTTP {resp.status}",
                     }
         except Exception as e:
             return {
                 "ok": False,
-                "message": f"创建工作区失败：{type(e).__name__}: {e}",
+                "message": f"创建工作区失败：{type(e).__name__}",
             }
 
     async def list_projects(self) -> dict[str, Any]:
@@ -448,10 +490,11 @@ class MulticaClient:
                 self._api_url + "/",
                 "api/projects?" + urlencode({"workspace_id": self._workspace_id}),
             )
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(trust_env=False) as session:
                 async with session.get(
                     url,
                     headers=self._headers(),
+                    allow_redirects=False,
                     timeout=aiohttp.ClientTimeout(total=10),
                 ) as resp:
                     if resp.status == 200:
@@ -469,16 +512,15 @@ class MulticaClient:
                             "message": "Token 无效，请在 Multica 控制台重新生成",
                             "projects": [],
                         }
-                    body = await resp.text()
                     return {
                         "ok": False,
-                        "message": f"HTTP {resp.status}: {body[:200]}",
+                        "message": f"Multica HTTP {resp.status}",
                         "projects": [],
                     }
         except Exception as e:
             return {
                 "ok": False,
-                "message": f"获取项目列表失败：{type(e).__name__}: {e}",
+                "message": f"获取项目列表失败：{type(e).__name__}",
                 "projects": [],
             }
 
@@ -486,16 +528,12 @@ class MulticaClient:
         self, value: str, projects: list[dict[str, Any]]
     ) -> dict[str, Any] | None:
         """按 id（支持完整 UUID 或前缀）查找项目。"""
-        target = (value or "").strip().lower()
-        if not target:
+        if not value.strip():
             return None
-        for proj in projects:
-            if not isinstance(proj, dict):
-                continue
-            pid = str(proj.get("id") or "").strip().lower()
-            if target == pid or (len(target) >= 8 and pid.startswith(target)):
-                return proj
-        return None
+        try:
+            return resolve_unique_resource(value, projects, "title")
+        except ResourceNotFound:
+            return None
 
     async def create_project(
         self,
@@ -545,10 +583,11 @@ class MulticaClient:
                 self._api_url + "/",
                 "api/projects?" + urlencode({"workspace_id": self._workspace_id}),
             )
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(trust_env=False) as session:
                 async with session.post(
                     url,
                     headers=self._headers(),
+                    allow_redirects=False,
                     json=payload,
                     timeout=aiohttp.ClientTimeout(total=30),
                 ) as resp:
@@ -566,15 +605,14 @@ class MulticaClient:
                             "ok": False,
                             "message": "Token 无效，请在 Multica 控制台重新生成",
                         }
-                    body = await resp.text()
                     return {
                         "ok": False,
-                        "message": f"HTTP {resp.status}: {body[:300]}",
+                        "message": f"Multica HTTP {resp.status}",
                     }
         except Exception as e:
             return {
                 "ok": False,
-                "message": f"创建项目失败：{type(e).__name__}: {e}",
+                "message": f"创建项目失败：{type(e).__name__}",
             }
 
     async def list_issues(
@@ -624,10 +662,11 @@ class MulticaClient:
                 self._api_url + "/",
                 "api/issues?" + urlencode(params),
             )
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(trust_env=False) as session:
                 async with session.get(
                     url,
                     headers=self._headers(),
+                    allow_redirects=False,
                     timeout=aiohttp.ClientTimeout(total=30),
                 ) as resp:
                     if resp.status == 200:
@@ -644,15 +683,14 @@ class MulticaClient:
                             "ok": False,
                             "message": "Token 无效，请在 Multica 控制台重新生成",
                         }
-                    body = await resp.text()
                     return {
                         "ok": False,
-                        "message": f"HTTP {resp.status}: {body[:300]}",
+                        "message": f"Multica HTTP {resp.status}",
                     }
         except Exception as e:
             return {
                 "ok": False,
-                "message": f"获取收件箱失败：{type(e).__name__}: {e}",
+                "message": f"获取收件箱失败：{type(e).__name__}",
             }
 
     async def _fetch_id_name_map(self, path: str, id_key: str = "id") -> dict[str, str]:
@@ -664,10 +702,11 @@ class MulticaClient:
             import aiohttp
 
             url = urljoin(self._api_url + "/", path)
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(trust_env=False) as session:
                 async with session.get(
                     url,
                     headers=self._headers(),
+                    allow_redirects=False,
                     timeout=aiohttp.ClientTimeout(total=8),
                 ) as resp:
                     if resp.status != 200:
@@ -704,7 +743,9 @@ class MulticaClient:
         if not self._workspace_id:
             return {}
 
-        cache_key = f"{self._api_url}|{self._workspace_id}"
+        import hashlib
+
+        cache_key = f"{self._api_url}|{self._workspace_id}|{hashlib.sha256(self._token.encode()).hexdigest()}"
         now = time.monotonic()
         cached = _ASSIGNEE_CACHE.get(cache_key)
         if cached and now - cached[0] < _ASSIGNEE_CACHE_TTL:

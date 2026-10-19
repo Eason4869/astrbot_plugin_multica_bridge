@@ -677,8 +677,15 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             await self._reply(event, "❌ 目标工作区缺少 id，无法切换")
             return
 
-        self.cfg["workspace_id"] = wsid
-        self._save_cfg()
+        previous = dict(self.cfg)
+        self.cfg = dict(previous, workspace_id=wsid, project_id="")
+        try:
+            self._save_cfg()
+        except Exception:
+            self.cfg = previous
+            raise
+        if getattr(self, "_work_mode", None):
+            self._work_mode.refresh()
         await self._reply(
             event,
             f"✅ 已切换到工作区 {name}（{wsid}）\n"
@@ -788,8 +795,15 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             await self._reply(event, "❌ 目标项目缺少 id，无法切换")
             return
 
-        self.cfg["project_id"] = pid
-        self._save_cfg()
+        previous = dict(self.cfg)
+        self.cfg = dict(previous, project_id=pid)
+        try:
+            self._save_cfg()
+        except Exception:
+            self.cfg = previous
+            raise
+        if getattr(self, "_work_mode", None):
+            self._work_mode.refresh()
         await self._reply(
             event,
             f"✅ 已切换到项目 {title}（{pid}）\n"

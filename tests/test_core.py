@@ -122,12 +122,12 @@ class TestWorkspaceLookup:
         assert client.find_workspace("nope", self.WORKSPACES) is None
         assert client.find_workspace("", self.WORKSPACES) is None
 
-    def test_pick_prefers_configured_then_first(self) -> None:
+    def test_pick_prefers_configured_and_requires_unambiguous_default(self) -> None:
         client = mc.MulticaClient({"workspace_id": "other"})
         _ws, name, _id = client._pick_workspace(self.WORKSPACES)
         assert name == "B"
         fallback = mc.MulticaClient({})
-        assert fallback._pick_workspace(self.WORKSPACES)[1] == "A"
+        assert fallback._pick_workspace(self.WORKSPACES[:1])[1] == "A"
 
 
 class TestProjectLookup:

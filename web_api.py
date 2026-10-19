@@ -136,6 +136,24 @@ class WebApiMixin:
 
             previous = dict(getattr(self, "cfg", None) or {})
             cur = merge_config_update(previous, body)
+            context_changed = any(cur.get(key) != previous.get(key) for key in ("workspace_id", "project_id"))
+            if context_changed:
+                from .multica_client import MulticaClient, apply_context_update
+
+                if cur.get("workspace_id") != previous.get("workspace_id") and "project_id" not in body:
+                    cur["project_id"] = ""
+                client = MulticaClient(cur)
+                spaces = await client.list_workspaces()
+                if not spaces["ok"]:
+                    return self._err(spaces["message"])
+                projects = {"ok": True, "projects": []}
+                if cur.get("project_id"):
+                    projects = await client.list_projects()
+                    if not projects["ok"]:
+                        return self._err(projects["message"])
+                cur = apply_context_update(previous, dict(body, project_id=cur.get("project_id", "")), spaces["workspaces"], projects["projects"])
+                if previous != self.cfg:
+                    return self._err("配置已变化，请刷新后重新保存")
             saved = [k for k in cur if cur[k] != previous.get(k)]
 
             data_dir = getattr(self, "_data_dir", None) or str(
