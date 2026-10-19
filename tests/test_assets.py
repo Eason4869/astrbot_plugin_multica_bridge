@@ -58,9 +58,9 @@ def test_page_uses_supported_theme_api() -> None:
 
 def test_page_uses_bridge_relative_endpoints() -> None:
     html = _page_html()
-    assert "apiGet('config'" in html
-    assert "apiPost('actions/save_config'" in html
-    assert "apiPost('actions/test_connection'" in html
+    assert re.search(r"apiGet\([\"']config[\"']", html)
+    assert re.search(r"apiPost\([\"']actions/save_config[\"']", html)
+    assert re.search(r"apiPost\([\"']actions/test_connection[\"']", html)
 
 
 def test_page_has_i18n_hooks() -> None:
@@ -103,7 +103,9 @@ def test_metadata_matches_page_and_changelog() -> None:
         assert entry.is_file(), f"页面入口不存在: {entry}"
 
     # CHANGELOG 首条版本应与 metadata 版本一致
-    first = re.search(r"^##\s*\[([^\]]+)\]", CHANGELOG.read_text(encoding="utf-8"), re.M)
+    first = re.search(
+        r"^##\s*\[([^\]]+)\]", CHANGELOG.read_text(encoding="utf-8"), re.M
+    )
     assert first, "CHANGELOG 缺少版本条目"
     assert first.group(1) == meta["version"], (
         f"CHANGELOG({first.group(1)}) 与 metadata({meta['version']}) 版本不一致"

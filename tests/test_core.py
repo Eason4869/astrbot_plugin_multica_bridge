@@ -46,7 +46,9 @@ class TestCoerce:
 
     def test_nested_dict(self) -> None:
         default = {"a": {"b": 1}}
-        assert config.coerce_to_default_type({"a": {"b": "9"}}, default) == {"a": {"b": 9}}
+        assert config.coerce_to_default_type({"a": {"b": "9"}}, default) == {
+            "a": {"b": 9}
+        }
 
 
 class TestDeepMerge:
@@ -99,7 +101,11 @@ class TestChatAllowed:
 
 class TestWorkspaceLookup:
     WORKSPACES = [
-        {"id": "d79e9419-0000-0000-0000-000000000001", "name": "A", "slug": "eason-service"},
+        {
+            "id": "d79e9419-0000-0000-0000-000000000001",
+            "name": "A",
+            "slug": "eason-service",
+        },
         {"id": "11112222-0000-0000-0000-000000000002", "name": "B", "slug": "other"},
     ]
 
@@ -143,4 +149,6 @@ class TestGetMulticaConfig:
         assert out["enabled"] is True
 
     def test_non_dict_returns_defaults(self) -> None:
-        assert mc.get_multica_config(None)["api_url"] == config.CONFIG_DEFAULTS["api_url"]
+        assert (
+            mc.get_multica_config(None)["api_url"] == config.CONFIG_DEFAULTS["api_url"]
+        )

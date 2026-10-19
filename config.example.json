@@ -10,5 +10,7 @@
   "private_chat_list": [],
   "nl_enabled": true,
   "nl_keyword": "multica",
-  "nl_llm_enabled": true
+  "nl_llm_enabled": true,
+  "work_mode_enabled": true,
+  "default_agent_id": ""
 }

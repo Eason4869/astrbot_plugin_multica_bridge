@@ -87,7 +87,9 @@ class TestParseRuleIntents:
 
 class TestIssueFieldExtract:
     def test_priority_and_due(self) -> None:
-        fields = nl._extract_issue_fields("修复支付，优先级紧急，截止 2026-10-01，标签 支付,线上")
+        fields = nl._extract_issue_fields(
+            "修复支付，优先级紧急，截止 2026-10-01，标签 支付,线上"
+        )
         assert fields["title"] == "修复支付"
         assert fields["priority"] == "urgent"
         assert fields["due"] == "2026-10-01"
@@ -110,7 +112,9 @@ class TestLLMHelpers:
         assert data["action"] == "status"
 
     def test_intent_from_llm_payload(self) -> None:
-        intent = nl.intent_from_llm_payload({"action": "issue_create", "args": "修复登录 --priority 高"})
+        intent = nl.intent_from_llm_payload(
+            {"action": "issue_create", "args": "修复登录 --priority 高"}
+        )
         assert intent is not None
         assert intent.source == "llm"
         assert intent.action == "issue_create"
@@ -139,7 +143,9 @@ class TestConfigDefaults:
         assert defaults["nl_llm_enabled"] is True
 
     def test_merge_preserves_nl_flags(self) -> None:
-        merged = config.deep_merge(config.CONFIG_DEFAULTS, {"nl_enabled": False, "nl_keyword": "桥接"})
+        merged = config.deep_merge(
+            config.CONFIG_DEFAULTS, {"nl_enabled": False, "nl_keyword": "桥接"}
+        )
         assert merged["nl_enabled"] is False
         assert merged["nl_keyword"] == "桥接"
         assert merged["api_url"] == config.CONFIG_DEFAULTS["api_url"]
