@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/main/logo.svg" width="88" height="88" alt="Multica Bridge" />
+<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.1.0/logo.svg" width="88" height="88" alt="Multica Bridge" />
 
 # AstrBot Multica Bridge
 
@@ -49,7 +49,7 @@
 
 ### 1. 安装正式版
 
-在 AstrBot 插件管理中通过仓库地址安装或更新：`https://github.com/Eason4869/astrbot_plugin_multica_bridge`。发布版本使用 `main` 分支；1.1.0 当前为本地更新准备，安装验证通过的 ZIP 后再部署，不代表远程已发布。也可在 AstrBot 插件目录手动安装：
+在 AstrBot 插件管理中通过仓库地址安装或更新：`https://github.com/Eason4869/astrbot_plugin_multica_bridge`。正式版本使用 `main` 分支，开发更新使用 `dev` 分支。也可从 [v1.1.0 Release](https://github.com/Eason4869/astrbot_plugin_multica_bridge/releases/tag/v1.1.0) 下载安装 ZIP 和 SHA256 校验文件，或在 AstrBot 插件目录手动安装：
 
 ```bash
 cd AstrBot/data/plugins
@@ -129,13 +129,13 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 
 ## WebUI 工作台
 
-<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/main/assets/workbench.png" width="1100" alt="Multica 工作台：连接状态、工作模式开关、智能体与当前工作会话" />
+<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.1.0/assets/workbench.png" width="1100" alt="Multica 工作台：连接状态、工作模式开关、智能体与当前工作会话" />
 
 *界面示例，地址、群号与会话均为演示数据。*
 
 - **总览**：显示连接检测结果、路由就绪状态和正在工作的聊天数量。
 - **工作模式**：控制转发开关、设置默认智能体、查看会话并退出指定窗口。
-- **连接与访问**：配置 URL、Token、工作区、项目，以及群聊／私聊访问规则。
+- **连接与访问**：配置 URL、Token、工作区、项目，以及统一的 Multica 放行用户名单。
 - **指令与高级设置**：查看常用指令，调整普通模式的自然语言控制。
 
 支持浅色／暗色、中英文及手机布局。工作模式开关关闭后暂停转发，已开启窗口仍需 `/multica exit` 或页面退出操作恢复普通模式。
@@ -221,8 +221,8 @@ multica 收件箱 10 open
 
 **已经验证了哪些环境？**
 
-本地覆盖 Python 3.10 / 3.12、旧配置升级、两个 AstrBot 源码版本及 Edge 桌面/手机/主题/双语验证。尚未进行真实 QQ、Multica 和真实模型评测；本地通过不代表线上联调完成。具体范围见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/docs/verification-1.1.0.md)。
+Python 3.10 / 3.12 各 182 项测试通过，覆盖旧配置升级和两个 AstrBot 源码版本；Edge 桌面/手机/主题/双语验证通过。远程检查见 [CI](https://github.com/Eason4869/astrbot_plugin_multica_bridge/actions/workflows/ci.yml)。尚未进行真实 QQ、Multica 和真实模型评测；自动化通过不代表线上联调完成。具体范围见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.1.0/docs/verification-1.1.0.md)。
 
 ## 项目信息
 
-[更新日志](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/CHANGELOG.md) · [问题反馈](https://github.com/Eason4869/astrbot_plugin_multica_bridge/issues) · [Multica](https://github.com/multica-ai/multica) · [AstrBot](https://github.com/AstrBotDevs/AstrBot) · [MIT License](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/main/LICENSE)
+[更新日志](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.1.0/CHANGELOG.md) · [问题反馈](https://github.com/Eason4869/astrbot_plugin_multica_bridge/issues) · [Multica](https://github.com/multica-ai/multica) · [AstrBot](https://github.com/AstrBotDevs/AstrBot) · [MIT License](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.1.0/LICENSE)
