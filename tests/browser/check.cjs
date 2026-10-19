@@ -65,7 +65,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
     assert.deepEqual(read().multica_whitelist, allowlist);
     assert.equal(await page.locator("#field-multica_whitelist").inputValue(), allowlist.join("\n"));
     await page.locator("#btn-workspaces").click();
-    await page.waitForFunction(() => document.querySelectorAll("#workspace-options option").length === 1);
+    await page.waitForFunction(() => document.querySelectorAll("#field-workspace_id option[data-workspace]").length === 2);
     await page.locator("#btn-projects").click();
     await page.waitForFunction(() => document.querySelectorAll("#project-options option").length === 1);
     const priorProject = await page.locator("#field-project_id").inputValue();

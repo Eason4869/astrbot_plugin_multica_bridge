@@ -177,6 +177,16 @@
       "pause_access_revoked": "开启者不在放行名单中"
     },
     "picker": {
+      "connectionHint": "验证 URL 和 Token 后，自动读取可选工作区。",
+      "workspaceLabel": "默认工作区",
+      "workspaceHint": "下拉选项显示名称与完整 ID，选择后自动保存。",
+      "workspaceChoose": "请先测试连接，再选择工作区",
+      "workspaceRequired": "请选择默认工作区",
+      "workspaceAuto": "自动使用唯一工作区",
+      "workspaceSaved": "已保存，待验证",
+      "workspaceUnavailable": "原工作区不可访问，请重新选择",
+      "workspacesLoaded": "工作区列表已更新，请选择默认工作区",
+      "connectedChoose": "连接成功，已读取工作区；请选择默认工作区后继续。",
       "auto": "自动选择智能体",
       "autoHint": "进入时自动选择唯一可用智能体",
       "loading": "正在读取智能体…",

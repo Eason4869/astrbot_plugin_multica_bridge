@@ -177,6 +177,16 @@
       "pause_access_revoked": "Starter no longer has access"
     },
     "picker": {
+      "connectionHint": "Test the URL and Token to load available workspaces automatically.",
+      "workspaceLabel": "Default workspace",
+      "workspaceHint": "Options show the name and full ID. Selection is saved automatically.",
+      "workspaceChoose": "Test connection to load workspaces",
+      "workspaceRequired": "Choose a default workspace",
+      "workspaceAuto": "Use the only workspace automatically",
+      "workspaceSaved": "Saved, not verified",
+      "workspaceUnavailable": "Previous workspace unavailable; choose another",
+      "workspacesLoaded": "Workspaces loaded. Choose a default workspace.",
+      "connectedChoose": "Connected and workspaces loaded. Choose a default workspace to continue.",
       "auto": "Choose an agent automatically",
       "autoHint": "Select the only available agent when entering",
       "loading": "Loading agents…",

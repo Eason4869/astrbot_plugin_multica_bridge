@@ -60,9 +60,9 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 ### 2. 配置连接
 
-进入 **AstrBot WebUI → 插件 → Multica桥接 → 设置**，填写 API 地址与 Token，点击「测试连接」。在 Multica 侧创建可用 API Token；自托管填写自己的服务器地址。
+进入 **AstrBot WebUI → 插件 → Multica桥接 → 设置 → 连接与访问**，填写 API 地址与 Token，点击填写区旁的「测试连接」。测试会自动读取当前 Token 可访问的全部工作区，将名称和完整 ID 显示在「默认工作区」下拉框。在 Multica 侧创建可用 API Token；自托管填写自己的服务器地址。
 
-工作区可留空自动解析，也可指定 ID。读取智能体列表并设置默认智能体：只有一个可用智能体时可自动选择；存在多个且未设默认值时，进入命令会返回编号供选择。
+只有一个工作区时可以留空自动解析；存在多个工作区时必须从下拉框明确选择，不会自动选第一项。选择后自动保存，完整 ID 显示在下拉框下方，获取方法见「常见问题」。再读取智能体列表并设置默认智能体：只有一个可用智能体时可自动选择；存在多个且未设默认值时，进入命令会返回编号供选择。
 
 本插件使用自己的设置页保存配置，不使用插件管理的通用齿轮配置入口。设置修改后自动保存并热生效，请确认页面显示保存成功。
 
@@ -206,6 +206,71 @@ multica 收件箱 10 open
 规则无法解析时，由 `nl_llm_enabled` 决定是否调用模型，限时 10 秒且不自动重试。工作模式文字直接转发给 Multica，退出使用 `/multica exit`；说“退出工作模式”不会改变本地模式。
 
 ## 常见问题
+
+**有多个工作区时，如何获取工作区 ID 并选择默认工作区？**
+
+工作区 ID 是 Multica 为工作区分配的唯一标识，通常是 UUID，例如 `12345678-1234-1234-1234-123456789abc`。应复制工作区对象的 `id`，不要填项目 ID、智能体 ID、用户 ID 或工作区显示名称。以下方法都只会列出当前 Token 有权限访问的工作区。
+
+**方法一：直接在插件设置页读取并选择（推荐）**
+
+1. 打开 **AstrBot WebUI → 插件 → Multica桥接 → 设置 → 连接与访问**。
+2. 填写 Multica API 地址和 Token，确认已启用桥接，等待页面提示「所有更改已保存」。已有 URL / Token 无需重填。
+3. 点击 API 地址和 Token 填写区旁的 **测试连接**。连接有效后，插件会自动读取工作区列表，无需先知道工作区 ID。
+4. 展开 **默认工作区** 下拉框，按 **工作区名称 · 完整 ID** 找到目标工作区。若有多个且尚未指定，会提示选择；已有有效选择会保留，不会被第一项覆盖。
+5. 选中后等待自动保存成功。下拉框下方显示选中工作区的完整 ID，可选中复制；如需重新获取列表，点击 **读取工作区**。
+6. 再测试连接，核对显示的工作区名称。需要绑定项目时，在此工作区下点击 **读取项目**，选择对应项目。
+
+只有一个工作区时可以保留「自动使用唯一工作区」；多个工作区时请明确选择。若原 ID 已失效，下拉框会保留原值并提示不可访问，需要重新选一个有效项。
+
+**方法二：在 QQ 中使用保留的管理命令**
+
+先确保自己的 QQ UID 或所在会话 UMO 已加入插件放行名单，且 AstrBot 未禁用相关指令。在机器人聊天中发送：
+
+```text
+/multica workspace list
+```
+
+返回示例（以下是演示数据，不是你的真实 ID）：
+
+```text
+共 2 个工作区：
+• 研发工作区（slug: development）
+  12345678-1234-1234-1234-123456789abc
+• 生产工作区（slug: production）
+  87654321-4321-4321-4321-cba987654321
+```
+
+每个名称下方的一整行就是工作区 ID。复制目标 ID 后，可发送以下命令切换并自动保存默认工作区：
+
+```text
+/multica workspace select 12345678-1234-1234-1234-123456789abc
+```
+
+命令也支持完整 slug（例如 `development`），但完整 ID 最明确。列表查询不要求预先选好工作区；不要用 `/multica status` 代替首次列表查询。
+
+**方法三：直接通过 Multica API 查询（备用）**
+
+使用与插件设置相同的 API 基地址和 Token，发送 `GET <API基地址>/api/workspaces`，认证头为 `Authorization: Bearer <Token>`。Windows PowerShell 可使用以下只读命令；将地址替换为自己的地址，Token 在提示时输入：
+
+```powershell
+$multicaBaseUrl = "https://你的Multica地址".TrimEnd('/')
+$multicaSecureToken = Read-Host "输入 Multica API Token" -AsSecureString
+$multicaCredential = [System.Management.Automation.PSCredential]::new("multica", $multicaSecureToken)
+$multicaHeaders = @{ Authorization = "Bearer " + $multicaCredential.GetNetworkCredential().Password }
+$multicaWorkspaces = Invoke-RestMethod -Method Get -Uri "$multicaBaseUrl/api/workspaces" -Headers $multicaHeaders
+$multicaWorkspaces | Select-Object name, slug, id | Format-Table -AutoSize
+Remove-Variable multicaHeaders, multicaCredential, multicaSecureToken
+```
+
+输出中 `id` 列就是所需的完整工作区 ID；`name` 用来辨认，`slug` 是工作区别名。该查询不需要 `workspace_id`，不会创建或修改工作区。接口实现可参阅 [Multica 官方工作区接口](https://github.com/multica-ai/multica/blob/main/server/internal/handler/workspace.go)。
+
+**读不到列表或切换后不能继续对话？**
+
+- 提示存在多个工作区：表示需要明确选择，不能依赖留空自动发现；新设置页会将「连接成功」与「待选择工作区」分别提示。
+- 下拉框暂无选项：先测试连接；也可用「读取工作区」刷新。查询失败不会覆盖已保存的工作区 ID。
+- `401`：检查 Token 是否正确或已失效；`403` 或找不到目标工作区：检查 Token 所属账号是否有访问权限、API 地址是否属于正确实例。空列表表示当前 Token 没有可列出的工作区。
+- 设置页没有下拉框或按钮仍在顶部：需要安装包含本次界面改动的版本，重载插件并强制刷新页面；旧版也可先用方法二或三获取 ID。
+- **默认工作区是插件全局配置，并非按群单独设置。** 切换工作区会清空旧项目，已有 Chat 绑定会暂停；重新选择项目后，在受影响聊天发送 `/multica new` 建立新绑定。工作模式的聊天隔离不等于每个窗口可单独设置默认工作区。
 
 **连接测试通过，为什么还无法进入？**
 

@@ -158,23 +158,36 @@ class MulticaClient:
     async def test_connection(self) -> dict[str, Any]:
         """测试 Multica 连接是否正常。
 
-        成功时自动缓存 workspace_name，用户无需手动填写 workspace_id 配置项；
-        同时返回当前工作区的 id/slug，便于 /multica status 展示。
+        返回连接状态及全部可选工作区；多工作区未选择时不回落到首项。
+        ok 仍表示当前工作区可用，connected 单独表示凭据与列表请求有效。
         """
         result = await self.list_workspaces()
         if not result["ok"]:
             return {
                 "ok": False,
+                "connected": False,
+                "workspaces": [],
+                "workspace_selection_required": False,
                 "message": result["message"],
                 "workspace_name": None,
                 "workspace_id": None,
                 "workspace_slug": None,
             }
+        discovery = {
+            "connected": True,
+            "workspaces": [
+                {key: item.get(key, "") for key in ("id", "name", "slug")}
+                for item in result["workspaces"]
+                if isinstance(item, dict) and item.get("id")
+            ],
+        }
         try:
             ws, name, wsid = self._pick_workspace(result["workspaces"])
         except ValueError as exc:
             return {
                 "ok": False,
+                **discovery,
+                "workspace_selection_required": True,
                 "message": str(exc),
                 "workspace_name": None,
                 "workspace_id": None,
@@ -184,6 +197,8 @@ class MulticaClient:
             self._workspace_name = str(name)
         return {
             "ok": True,
+            **discovery,
+            "workspace_selection_required": False,
             "message": "连接成功",
             "workspace_name": name,
             "workspace_id": wsid,

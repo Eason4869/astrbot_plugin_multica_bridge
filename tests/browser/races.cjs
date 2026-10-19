@@ -15,6 +15,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
       document.getElementById("save-state").textContent.includes("配置已读取"),
     );
     restore = await page.locator("#field-workspace_id").inputValue();
+    await page.locator("#btn-workspaces").click();
+    await page.waitForFunction(() => document.querySelectorAll("#field-workspace_id option[data-workspace]").length === 2);
     if (!process.argv.includes("--clear-only")) {
       let reached, release;
       const responseWaiting = new Promise((resolve) => (reached = resolve));
@@ -29,7 +31,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
       await responseWaiting;
       await page
         .locator("#field-workspace_id")
-        .fill("changed-after-test-started");
+        .selectOption("00000000-0000-0000-0000-000000000002");
       release();
       await page.waitForFunction(
         () => !document.getElementById("btn-test").disabled,
@@ -40,7 +42,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
         "Stale success must not verify new settings",
       );
       await page.unroute("**/plugin/actions/test_connection");
-      await page.locator("#field-workspace_id").fill(restore);
+      await page.locator("#field-workspace_id").selectOption(restore);
       await page.waitForFunction(() =>
         document
           .getElementById("save-state")
