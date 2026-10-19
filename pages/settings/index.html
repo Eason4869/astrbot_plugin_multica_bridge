@@ -574,6 +574,7 @@
         overflow-wrap: anywhere;
       }
       .forms {
+        align-items: start;
         display: grid;
         grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
         gap: 20px;
@@ -1028,6 +1029,43 @@
           transition: none !important;
         }
       }
+
+      .access-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+      .access-badge { color:var(--blue); background:var(--blue-soft); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:650; white-space:nowrap; }
+      .allowlist-guide { display:grid; gap:10px; margin:16px 0; }
+      .allowlist-example { border:1px solid var(--line); border-left:3px solid var(--blue); border-radius:10px; padding:12px 14px; background:var(--input); min-width:0; }
+      .example-tag { display:block; font-size:10px; font-weight:700; letter-spacing:.8px; color:var(--muted); margin-bottom:5px; }
+      .allowlist-example code { display:block; font-size:12px; color:var(--blue); overflow-wrap:anywhere; }
+      .allowlist-example p { color:var(--muted); font-size:12px; margin-top:6px; }
+      .access-note { padding:12px 14px; background:var(--blue-soft); border-radius:10px; color:var(--ink); font-size:12px; margin:12px 0; }
+      .context-tools { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+      .panel { box-shadow:0 4px 18px rgba(12,31,62,.035); }
+      .session-row { transition:background .18s ease; }
+      .session-row:hover { background:var(--input); }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } * { transition:none !important; } }
+
+      .agent-panel { overflow:visible; }
+      .agent-panel > .note { border-radius:0 0 13px 13px; }
+      .agent-control { flex:0 1 420px; max-width:100%; }
+      .agent-picker { position:relative; flex:1; min-width:0; }
+      .agent-input-wrap { position:relative; }
+      .agent-control .agent-picker #field-default_agent_id { width:100%; min-width:0; padding-right:38px; font-family:inherit; }
+      .agent-toggle { position:absolute; top:1px; right:1px; bottom:1px; width:36px; border:0; border-left:1px solid var(--line); border-radius:0 7px 7px 0; color:var(--muted); background:transparent; display:grid; place-items:center; }
+      .agent-toggle:hover { color:var(--blue); background:var(--blue-soft); }
+      .agent-toggle svg { width:16px; height:16px; transition:transform .18s; }
+      .agent-toggle[aria-expanded="true"] svg { transform:rotate(180deg); }
+      .agent-menu { position:absolute; z-index:50; right:0; top:calc(100% + 8px); width:max(100%,320px); max-width:calc(100vw - 60px); padding:8px; border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:0 16px 42px rgba(12,25,48,.18); }
+      .agent-menu[hidden] { display:none; }
+      .agent-control .agent-picker .agent-search { width:100%; margin-bottom:7px; font-family:inherit; }
+      #agent-list { max-height:260px; overflow-y:auto; scrollbar-width:thin; }
+      .agent-option { width:100%; border:0; border-radius:8px; padding:10px 12px; background:transparent; color:var(--ink); text-align:left; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+      .agent-option:hover,.agent-option[data-active="true"] { background:var(--blue-soft); }
+      .agent-option[aria-selected="true"] { color:var(--blue); }
+      .agent-option strong { display:block; font-size:13px; font-weight:600; }
+      .agent-option small { display:block; color:var(--muted); font:11px/1.5 Consolas,monospace; overflow-wrap:anywhere; }
+      .agent-option span { min-width:0; }
+      .agent-empty { padding:18px 12px; font-size:12px; color:var(--muted); text-align:center; }
+      @media (max-width:640px) { .agent-control { flex-basis:auto; width:100%; } .agent-menu { left:0; right:auto; width:min(280px,calc(100vw - 80px)); } }
     </style>
   </head>
   <body>
@@ -1090,7 +1128,7 @@
           >
         </nav>
         <div class="rail-foot">
-          <b>AstrBot × Multica</b><span>v1.0.0</span>
+          <b>AstrBot × Multica</b><span>v1.1.0</span>
         </div>
       </aside>
       <main>
@@ -1208,7 +1246,7 @@
               </p>
             </div>
           </div>
-          <div class="panel">
+          <div class="panel agent-panel">
             <div class="setting-row">
               <div>
                 <h3 data-i18n="settings.work.enabled">启用工作模式</h3>
@@ -1237,13 +1275,10 @@
                 </p>
               </div>
               <div class="agent-control">
-                <input
-                  id="field-default_agent_id"
-                  class="field-control mono"
-                  list="agent-options"
-                  placeholder="自动选择 / Agent ID"
-                  aria-label="默认智能体 ID"
-                /><datalist id="agent-options"></datalist
+                <div class="agent-picker">
+                  <div class="agent-input-wrap"><input id="field-default_agent_id" class="field-control" placeholder="自动选择智能体" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="agent-list" aria-label="默认智能体" /><button id="btn-agent-toggle" class="agent-toggle" aria-label="展开智能体列表" aria-controls="agent-menu" aria-expanded="false"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m5 8 5 5 5-5"/></svg></button></div>
+                  <div id="agent-menu" class="agent-menu" hidden><input id="agent-search" class="field-control agent-search" type="search" autocomplete="off" placeholder="搜索名称或 ID" aria-label="搜索智能体" /><div id="agent-list" role="listbox" aria-label="可用智能体"></div></div>
+                </div><datalist id="agent-options"></datalist
                 ><button
                   class="btn"
                   id="btn-agents"
@@ -1255,7 +1290,7 @@
             </div>
             <div class="note" data-i18n="settings.work.note">
               回复始终带有【来自
-              Multica｜工作模式】前缀。同一群内成员共用对话，群外消息不受影响；首版支持文字。
+              Multica｜工作模式】前缀。群聊仅开启者的文字转发，群外消息不受影响；首版支持文字。
             </div>
           </div>
           <div class="panel" style="margin-top: 14px">
@@ -1370,25 +1405,28 @@
                     >工作区 ID</span
                   ><input
                     class="field-control mono"
-                    id="field-workspace_id"
+                    id="field-workspace_id" list="workspace-options"
                     placeholder="自动获取"
                   /><span
                     class="field-hint"
                     data-i18n="settings.conn.workspaceIdHint"
-                    >留空自动获取，通常无需填写。</span
+                    >只有一个工作区时可留空，多个工作区请读取列表选择。</span
                   ></label
                 ><label class="field"
                   ><span class="field-label" data-i18n="settings.conn.projectId"
                     >项目 ID</span
                   ><input
                     class="field-control mono"
-                    id="field-project_id"
+                    id="field-project_id" list="project-options"
                     placeholder="可选"
                   /><span class="field-hint" data-i18n="settings.ui.projectHint"
                     >用于新对话的项目上下文。</span
                   ></label
                 >
               </div>
+              <div class="context-tools"><button class="btn btn-quiet" id="btn-workspaces" data-i18n="settings.access.workspaces">读取工作区</button><button class="btn btn-quiet" id="btn-projects" data-i18n="settings.access.projects">读取项目</button><a class="btn btn-quiet" id="btn-open-multica" target="_blank" rel="noopener noreferrer" data-i18n="settings.access.manage">在 Multica 管理</a></div>
+              <datalist id="workspace-options"></datalist><datalist id="project-options"></datalist>
+              <p class="field-hint" data-i18n="settings.access.context">工作区和项目为全局默认值。变更后旧绑定暂停，请在受影响聊天发送 /multica new；切换工作区会清空旧项目。</p>
               <div class="divider"></div>
               <div
                 id="test-result"
@@ -1400,100 +1438,18 @@
               </div>
             </div>
             <div class="panel form-panel">
-              <h3 data-i18n="settings.filter.title">会话访问规则</h3>
-              <div class="filter-pair">
-                <div>
-                  <p class="small-heading" data-i18n="settings.ui.group">
-                    群聊
-                  </p>
-                  <label class="field"
-                    ><span
-                      class="field-label"
-                      data-i18n="settings.ui.filterMode"
-                      >过滤方式</span
-                    ><select
-                      id="field-group_chat_mode"
-                      class="field-control filter-mode"
-                    >
-                      <option
-                        value="blacklist"
-                        data-i18n="settings.filter.blacklist"
-                      >
-                        黑名单
-                      </option>
-                      <option
-                        value="whitelist"
-                        data-i18n="settings.filter.whitelist"
-                      >
-                        白名单
-                      </option>
-                      <option
-                        value="disabled"
-                        data-i18n="settings.filter.disabled"
-                      >
-                        不限制
-                      </option></select
-                    ><textarea
-                      class="field-control filter-list-textarea mono"
-                      id="field-group_chat_list"
-                      rows="3"
-                      placeholder="每行一个群号"
-                    ></textarea
-                    ><span
-                      class="field-hint"
-                      data-i18n="settings.filter.groupListHint"
-                      >群号，每行一个。</span
-                    ></label
-                  >
-                </div>
-                <div>
-                  <p class="small-heading" data-i18n="settings.ui.private">
-                    私聊
-                  </p>
-                  <label class="field"
-                    ><span
-                      class="field-label"
-                      data-i18n="settings.ui.filterMode"
-                      >过滤方式</span
-                    ><select
-                      id="field-private_chat_mode"
-                      class="field-control filter-mode"
-                    >
-                      <option
-                        value="blacklist"
-                        data-i18n="settings.filter.blacklist"
-                      >
-                        黑名单
-                      </option>
-                      <option
-                        value="whitelist"
-                        data-i18n="settings.filter.whitelist"
-                      >
-                        白名单
-                      </option>
-                      <option
-                        value="disabled"
-                        data-i18n="settings.filter.disabled"
-                      >
-                        不限制
-                      </option></select
-                    ><textarea
-                      class="field-control filter-list-textarea mono"
-                      id="field-private_chat_list"
-                      rows="3"
-                      placeholder="每行一个 QQ 号"
-                    ></textarea
-                    ><span
-                      class="field-hint"
-                      data-i18n="settings.filter.privateListHint"
-                      >QQ 号，每行一个。</span
-                    ></label
-                  >
-                </div>
+              <div class="access-heading"><h3 data-i18n="settings.access.title">Multica 放行用户名单</h3><span class="access-badge" data-i18n="settings.access.badge">UID / UMO</span></div>
+              <p class="field-hint" data-i18n="settings.access.intro">群聊与私聊统一授权。每行一项，可混填；匹配任意一项即可使用。留空时无人可用。</p>
+              <label class="field"><span class="field-label" data-i18n="settings.access.label">放行的 UID 或完整 UMO</span>
+                <textarea id="field-multica_whitelist" class="field-control filter-list-textarea mono" rows="5" aria-describedby="allowlist-help" placeholder="用户QQ号&#10;机器人ID:FriendMessage:用户QQ号&#10;机器人ID:GroupMessage:群号"></textarea>
+              </label>
+              <div class="allowlist-guide" id="allowlist-help">
+                <div class="allowlist-example"><span class="example-tag">01 · UID</span><code>用户QQ号</code><p data-i18n="settings.access.uid">该用户可在所有群聊和私聊使用。</p></div>
+                <div class="allowlist-example"><span class="example-tag">02 · FriendMessage</span><code>机器人ID:FriendMessage:用户QQ号</code><p data-i18n="settings.access.private">仅允许该用户通过 机器人ID 私聊使用，不放行群聊。</p></div>
+                <div class="allowlist-example"><span class="example-tag">03 · GroupMessage</span><code>机器人ID:GroupMessage:群号</code><p data-i18n="settings.access.group">允许 机器人ID 所在的该群所有成员使用指令。</p></div>
               </div>
-              <p class="field-hint" data-i18n="settings.ui.filterHint">
-                黑名单排除指定会话；白名单只允许指定会话；不限制则全部可用。
-              </p>
+              <p class="access-note" data-i18n="settings.access.scope">群聊进入工作模式后，仅开启者的文字转发给 Multica；其他群友继续使用 AstrBot。工作回复在群内可见。</p>
+              <p class="field-hint" data-i18n="settings.access.denial">未获放行时回复：您没有使用Multica的权限，请联系管理员获取使用资格</p>
               <div class="divider"></div>
               <h3 data-i18n="settings.ui.permissions">谁能开始工作？</h3>
               <p
@@ -1537,7 +1493,7 @@
               <p data-i18n="settings.work.new">新建对话，保留旧对话</p>
             </div>
             <div class="reference-item">
-              <code>/multica agent &lt;ID&gt;</code>
+              <code>/multica agent [编号或ID]</code>
               <p data-i18n="settings.work.choose">选择智能体并开启新对话</p>
             </div>
             <div class="reference-item">
@@ -1548,6 +1504,7 @@
               <code>/multica status</code>
               <p data-i18n="settings.cmd.status">查看当前模式与执行状态</p>
             </div>
+            <div class="reference-item"><code>/multica help</code><p data-i18n="settings.cmd.help">查看帮助</p></div>
           </div>
           <details class="advanced">
             <summary data-i18n="settings.ui.advanced">
@@ -1558,7 +1515,7 @@
                 <div>
                   <h3 data-i18n="settings.nl.enabled">启用自然语言控制</h3>
                   <p class="setting-description" data-i18n="settings.ui.nlHint">
-                    仅在普通模式识别建 Issue、切换项目等管理操作。
+                    普通模式识别进入工作模式、收件箱查询和 Issue 草稿，写入前需本人确认。
                   </p>
                 </div>
                 <label class="toggle"
@@ -1606,7 +1563,7 @@
           </details>
         </section>
         <footer class="footer">
-          <span>AstrBot Multica Bridge · v1.0.0</span
+          <span>AstrBot Multica Bridge · v1.1.0</span
           ><span data-i18n="settings.ui.footer"
             >连接配置保留，工作状态按聊天保存。</span
           >
@@ -1622,10 +1579,7 @@
           "token",
           "workspace_id",
           "project_id",
-          "group_chat_mode",
-          "group_chat_list",
-          "private_chat_mode",
-          "private_chat_list",
+          "multica_whitelist",
           "nl_enabled",
           "nl_keyword",
           "nl_llm_enabled",
@@ -1638,8 +1592,9 @@
           "nl_llm_enabled",
           "work_mode_enabled",
         ]);
-        const LISTS = new Set(["group_chat_list", "private_chat_list"]);
+        const LISTS = new Set(["multica_whitelist"]);
         const dirty = new Map();
+        let agentList = [], agentLoading = false, activeAgent = -1;
         let cfg = {},
           bridge = null,
           loaded = false,
@@ -1704,6 +1659,17 @@
           if (bridge.getContext) apply(await bridge.getContext());
           if (bridge.onContext) bridge.onContext(apply);
         }
+        async function loadCommands() {
+          const data = await apiGet("command_reference");
+          const keys = ["cmd.tree", "work.exit", "work.new", "work.choose", "work.stop", "cmd.status", "cmd.help"];
+          const cards = (data.commands || []).map((item, index) => {
+            const card = document.createElement("div"); card.className = "reference-item";
+            const code = document.createElement("code"); code.textContent = item.command;
+            const description = document.createElement("p"); description.textContent = t("settings." + keys[index], item.description);
+            card.append(code, description); return card;
+          });
+          if (cards.length) document.querySelector(".reference").replaceChildren(...cards);
+        }
         async function loadConfig() {
           cfg = await apiGet("config");
           FIELDS.forEach((key) => {
@@ -1716,6 +1682,8 @@
                   ? ""
                   : cfg[key];
           });
+          const address = String(cfg.api_url || "");
+          el("btn-open-multica").href = /^https?:\/\//i.test(address) ? address : "#";
           loaded = true;
           el("btn-test").disabled = false;
           state(t("settings.ui.loaded", "配置已读取"));
@@ -1769,10 +1737,18 @@
         }
         function changed(key, value) {
           if (!loaded) return;
+          const previousValue = cfg[key];
           cfg[key] = value;
-          if (["api_url", "token", "workspace_id"].includes(key)) {
+          if (key === "workspace_id" && value !== previousValue) {
+            cfg.project_id = "";
+            el("field-project_id").value = "";
+            el("project-options").replaceChildren();
+            dirty.set("project_id", ++version);
+          }
+          if (["api_url", "token", "workspace_id", "project_id"].includes(key)) {
             connectionRevision++;
             el("agent-options").replaceChildren();
+            agentList = []; closeAgentMenu();
             statusValue(
               "connection-state",
               t("settings.ui.unverified", "尚未检测"),
@@ -1861,6 +1837,8 @@
               (session.forwarding
                 ? t("settings.ui.forwarding", "工作模式")
                 : t("settings.ui.paused", "暂停转发"));
+            if (session.owner_id) hint.textContent += " · " + t("settings.access.owner", "开启者") + ": " + session.owner_id;
+            if (session.pause_reason) hint.textContent += " · " + t("settings.access.pause_" + session.pause_reason, session.pause_reason);
             details.append(title, hint);
             const button = document.createElement("button");
             button.className = "btn";
@@ -1931,30 +1909,104 @@
             button.disabled = false;
           }
         };
-        el("btn-agents").onclick = async () => {
-          if (!loaded) return;
+        for (const [button, endpoint, key, list] of [
+          ["btn-workspaces", "actions/list_workspaces", "workspaces", "workspace-options"],
+          ["btn-projects", "actions/list_projects", "projects", "project-options"],
+        ]) {
+          el(button).onclick = async () => {
+            el(button).disabled = true;
+            try {
+              const data = await apiPost(endpoint);
+              const options = (data[key] || []).map(item => {
+                const option = document.createElement("option");
+                option.value = item.id; option.label = item.name || item.title || item.slug || item.id;
+                return option;
+              });
+              el(list).replaceChildren(...options);
+              toast(t("settings.access.optionsLoaded", "列表已更新，请在输入框中选择"));
+            } catch (error) { toast(error.message); }
+            finally { el(button).disabled = false; }
+          };
+        }
+        function closeAgentMenu() {
+          el("agent-menu").hidden = true;
+          el("field-default_agent_id").setAttribute("aria-expanded", "false");
+          el("btn-agent-toggle").setAttribute("aria-expanded", "false");
+          activeAgent = -1;
+        }
+        function renderAgentOptions() {
+          const query = el("agent-search").value.trim().toLocaleLowerCase();
+          const candidates = [{id:"", name:t("settings.picker.auto", "自动选择智能体"), detail:t("settings.picker.autoHint", "进入时自动选择唯一可用智能体")}, ...agentList];
+          const filtered = candidates.filter(agent => !query || (agent.name + " " + agent.id).toLocaleLowerCase().includes(query));
+          const options = filtered.map(agent => {
+            const option = document.createElement("button");
+            option.className = "agent-option"; option.type = "button";
+            option.setAttribute("role", "option"); option.setAttribute("aria-selected", String(String(cfg.default_agent_id || "") === agent.id));
+            option.dataset.agentId = agent.id;
+            const body = document.createElement("span"), name = document.createElement("strong"), id = document.createElement("small"), check = document.createElement("span");
+            name.textContent = agent.name; id.textContent = agent.detail || agent.id;
+            check.textContent = String(cfg.default_agent_id || "") === agent.id ? "✓" : "";
+            body.append(name, id); option.append(body, check);
+            option.onclick = () => {
+              changed("default_agent_id", agent.id);
+              el("field-default_agent_id").value = agent.id ? agent.name : "";
+              closeAgentMenu(); el("field-default_agent_id").focus();
+            };
+            return option;
+          });
+          el("agent-list").replaceChildren(...options);
+          if (!options.length || agentLoading) {
+            const notice = document.createElement("div"); notice.className = "agent-empty";
+            notice.textContent = agentLoading ? t("settings.picker.loading", "正在读取智能体…") : t("settings.picker.empty", "没有匹配的智能体");
+            if (agentLoading) el("agent-list").replaceChildren(notice); else el("agent-list").append(notice);
+          }
+          activeAgent = -1;
+        }
+        async function loadAgents() {
+          if (!loaded || agentLoading) return;
           const revision = connectionRevision;
-          el("btn-agents").disabled = true;
+          agentLoading = true; el("btn-agents").disabled = true; renderAgentOptions();
           try {
             await doSave();
             const data = await apiPost("actions/list_agents");
             if (revision !== connectionRevision) return;
-            const options = (data.agents || []).map((agent) => {
-              const option = document.createElement("option");
-              option.value = agent.id;
-              option.label = agent.name;
-              return option;
-            });
-            el("agent-options").replaceChildren(...options);
-            toast(t("settings.ui.agentsLoaded", "智能体列表已更新"));
-          } catch (error) {
-            toast(error.message);
-          } finally {
-            el("btn-agents").disabled = false;
+            agentList = (data.agents || []).map(agent => ({id:String(agent.id), name:String(agent.name || agent.id)}));
+            el("agent-options").replaceChildren(...agentList.map(agent => {
+              const option = document.createElement("option"); option.value = agent.id; option.label = agent.name; return option;
+            }));
+            const current = agentList.find(agent => agent.id === cfg.default_agent_id);
+            if (current) el("field-default_agent_id").value = current.name;
+          } catch (error) { toast(error.message); }
+          finally { agentLoading = false; el("btn-agents").disabled = false; renderAgentOptions(); }
+        }
+        async function openAgentMenu() {
+          el("agent-search").value = ""; el("agent-menu").hidden = false;
+          el("field-default_agent_id").setAttribute("aria-expanded", "true");
+          el("btn-agent-toggle").setAttribute("aria-expanded", "true");
+          renderAgentOptions(); el("agent-search").focus();
+          if (!agentList.length) await loadAgents();
+        }
+        el("btn-agent-toggle").onclick = () => el("agent-menu").hidden ? openAgentMenu() : closeAgentMenu();
+        el("btn-agents").onclick = loadAgents;
+        el("agent-search").oninput = renderAgentOptions;
+        function agentKeydown(event) {
+          if (event.key === "Escape") { closeAgentMenu(); el("field-default_agent_id").focus(); return; }
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            if (el("agent-menu").hidden) { openAgentMenu(); return; }
+            const options = [...el("agent-list").querySelectorAll("[role=option]")];
+            if (!options.length) return;
+            activeAgent = (activeAgent + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length;
+            options.forEach((option, index) => option.dataset.active = String(index === activeAgent));
+            options[activeAgent].scrollIntoView({block:"nearest"});
+          } else if (event.key === "Enter" && !el("agent-menu").hidden && activeAgent >= 0) {
+            event.preventDefault(); el("agent-list").querySelectorAll("[role=option]")[activeAgent]?.click();
           }
-        };
-        el("btn-refresh").onclick = () =>
-          loadStatus().catch((error) => toast(error.message));
+        }
+        el("agent-search").onkeydown = agentKeydown;
+        el("field-default_agent_id").onkeydown = agentKeydown;
+        document.addEventListener("click", event => { if (!event.target.closest(".agent-picker")) closeAgentMenu(); });
+        el("btn-refresh").onclick = () => loadStatus().catch(error => toast(error.message));
         el("btn-retry-save").onclick = () => doSave().catch(() => {});
         el("btn-token-visibility").onclick = () => {
           const input = el("field-token");
@@ -2045,7 +2097,11 @@
             if (bridge.ready) await bridge.ready();
             await watchTheme();
             applyI18n();
+            el("field-default_agent_id").placeholder = t("settings.picker.auto", "自动选择智能体");
+            el("agent-search").placeholder = t("settings.picker.search", "搜索名称或 ID");
+            el("btn-agent-toggle").setAttribute("aria-label", t("settings.picker.toggle", "展开智能体列表"));
             await loadConfig();
+            await loadCommands();
             el("load-error").classList.add("hidden");
             await loadStatus();
             setInterval(() => {

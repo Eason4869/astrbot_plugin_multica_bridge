@@ -106,7 +106,9 @@ def merge_config_update(current: dict, patch: dict) -> dict:
     updated = dict(current)
     if "multica_whitelist" in patch:
         value = patch["multica_whitelist"]
-        if not isinstance(value, list) or any(isinstance(i, bool) or not isinstance(i, (str, int)) for i in value):
+        if not isinstance(value, list) or any(
+            isinstance(i, bool) or not isinstance(i, (str, int)) for i in value
+        ):
             raise ValueError("Multica 白名单必须是用户 ID 列表")
     for key, value in patch.items():
         if key not in CONFIG_DEFAULTS:
@@ -118,7 +120,9 @@ def merge_config_update(current: dict, patch: dict) -> dict:
                 continue
         updated[key] = coerce_to_default_type(value, CONFIG_DEFAULTS[key])
         if key == "multica_whitelist":
-            updated[key] = list(dict.fromkeys(str(i).strip() for i in value if str(i).strip()))
+            updated[key] = list(
+                dict.fromkeys(str(i).strip() for i in value if str(i).strip())
+            )
     if patch.get("clear_token") is True:
         updated["token"] = ""
     return updated

@@ -34,8 +34,10 @@ def nl_plugin(monkeypatch):
 
     def register(command, admin=False, enabled=True):
         handler = SimpleNamespace(
-            event_type="message", handler_module_path=type(plugin).__module__,
-            handler_name="unused", enabled=enabled,
+            event_type="message",
+            handler_module_path=type(plugin).__module__,
+            handler_name="unused",
+            enabled=enabled,
             event_filters=[CommandFilter("multica " + command)]
             + ([AdminOnly()] if admin else []),
         )
@@ -45,10 +47,20 @@ def nl_plugin(monkeypatch):
     return plugin, register, replies
 
 
-@pytest.mark.parametrize("action,command", [("issue_create", "issue create"), ("inbox", "inbox"), ("project_select", "project select")])
+@pytest.mark.parametrize(
+    "action,command",
+    [
+        ("issue_create", "issue create"),
+        ("inbox", "inbox"),
+        ("project_select", "project select"),
+    ],
+)
 @pytest.mark.parametrize("source", ["rule", "llm"])
-def test_natural_actions_cannot_bypass_admin_permission(nl_plugin, action, command, source):
+def test_natural_actions_cannot_bypass_admin_permission(
+    nl_plugin, action, command, source
+):
     from astrbot_plugin_multica_bridge.nl_control import NLIntent
+
     plugin, register, replies = nl_plugin
     register(command, admin=True)
     calls = []
@@ -66,6 +78,7 @@ def test_natural_actions_cannot_bypass_admin_permission(nl_plugin, action, comma
 
 def test_disabled_inbox_cannot_be_called_through_natural_language(nl_plugin):
     from astrbot_plugin_multica_bridge.nl_control import NLIntent
+
     plugin, register, _ = nl_plugin
     register("inbox", enabled=False)
     event = Event("multica 收件箱")
@@ -92,3 +105,10 @@ def test_disabled_bridge_does_not_call_provider(nl_plugin):
     plugin._llm_parse_intent = parse
     asyncio.run(plugin.on_multica_natural_language(Event("multica 是什么")))
     assert not calls
+
+
+def test_missing_enter_handler_cannot_authorize_mode_changes(nl_plugin):
+    plugin, _, _ = nl_plugin
+    assert not plugin.authorize_work_event(Event("/multica"), {})
+    assert not plugin.authorize_work_event(Event("/multica new"), {})
+    assert not plugin.authorize_work_event(Event("/multica stop"), {})

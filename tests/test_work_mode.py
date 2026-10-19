@@ -176,6 +176,59 @@ def test_new_chat_and_stop_and_status_do_not_call_default_model(tmp_path):
     asyncio.run(run())
 
 
+def test_agent_without_choice_does_not_create_or_replace_chat(tmp_path):
+    async def run():
+        service, client, _ = setup_service(tmp_path)
+        try:
+            await service.handle(Event("/multica agent"))
+            assert not client.created
+            await service.handle(Event())
+            await service.handle(Event("/multica agent"))
+            assert len(client.created) == 1
+        finally:
+            await service.close()
+
+    asyncio.run(run())
+
+
+def test_fast_reply_suppresses_ack_but_waiting_request_gets_notice(
+    tmp_path, monkeypatch
+):
+    async def run():
+        module = importlib.import_module("astrbot_plugin_multica_bridge.work_mode")
+        monkeypatch.setattr(module, "ACK_DELAY", 0.02)
+        service, client, outputs = setup_service(tmp_path)
+        try:
+            await service.handle(Event())
+            await service.worker.close()
+
+            async def send(session, content):
+                client.history.append(
+                    {"id": "reply1", "role": "assistant", "content": "done"}
+                )
+                return {"message_id": "m", "task_id": "t"}
+
+            client.send_chat = send
+            fast = Event("fast")
+            await service.handle(fast)
+            await asyncio.sleep(0.04)
+            assert outputs and not fast.replies
+            await service.worker.close()
+
+            async def waiting(session, content):
+                return {"message_id": "m2", "task_id": "t2"}
+
+            client.send_chat = waiting
+            slow = Event("slow")
+            await service.handle(slow)
+            await asyncio.sleep(0.04)
+            assert slow.replies
+        finally:
+            await service.close()
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("command", ["/mulitca", "/multicafoo", "multica是什么"])
 def test_no_typo_alias_or_substring_takeover(tmp_path, command):
     service, _, _ = setup_service(tmp_path)

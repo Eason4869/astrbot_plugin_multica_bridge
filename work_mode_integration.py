@@ -5,7 +5,7 @@ from __future__ import annotations
 from .astrbot_compat import WorkModeRouter
 from .reply_worker import PREFIX
 from .session_store import SessionStore
-from .work_mode import COMMAND, WorkMode
+from .work_mode import COMMAND, CONTROLS, WorkMode
 
 
 class WorkModeMixin:
@@ -94,9 +94,11 @@ class WorkModeMixin:
         handler = self._find_work_handler(event)
         if handler is None:
             # Unknown /multica controls only display help; no external operation.
-            return (
-                True if COMMAND.fullmatch((event.message_str or "").strip()) else False
-            )
+            match = COMMAND.fullmatch((event.message_str or "").strip())
+            action = (
+                (match.group(1) or "enter").split()[0] if match else "enter"
+            ).casefold()
+            return bool(match and action not in CONTROLS)
         checks = [handler]
         match = COMMAND.fullmatch((event.message_str or "").strip())
         action = ((match.group(1) or "enter").split()[0] if match else "enter").lower()

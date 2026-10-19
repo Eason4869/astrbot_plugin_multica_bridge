@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 PREFIX = "【来自 Multica｜工作模式】\n"
 
@@ -18,6 +19,7 @@ class ReplyWorker:
         self.store, self.push = store, push
         self.permitted = permitted or (lambda record: True)
         self.tasks: dict[str, asyncio.Task] = {}
+        self.deliveries: dict[str, int] = {}
 
     def live(self, key: str, generation: int) -> bool:
         return self.store.current(key, generation) and self.permitted(
@@ -65,6 +67,7 @@ class ReplyWorker:
                         key, generation, message_id, index + 1
                     ):
                         return
+                self.deliveries[key] = self.deliveries.get(key, 0) + 1
             if not self.store.commit_delivery(key, generation, message_id, 0):
                 return
 
@@ -88,8 +91,13 @@ class ReplyWorker:
                 failure_reported = False
             except asyncio.CancelledError:
                 raise
-            except Exception:
+            except Exception as exc:
                 delay = min(delay * 2, 30)
+                logging.getLogger(__name__).warning(
+                    "[multica_bridge] stage=reply-sync exception=%s retry_in=%ss",
+                    type(exc).__name__,
+                    delay,
+                )
                 if not failure_reported and self.live(key, generation):
                     try:
                         await self.push(

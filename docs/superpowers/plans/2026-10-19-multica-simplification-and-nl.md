@@ -8,13 +8,13 @@
 
 **Tech Stack:** Python 3.10+、asyncio、aiohttp、AstrBot 4.27.2+、原生 HTML/CSS/JavaScript、pytest、Ruff、现有浏览器验证脚本。不引入 Docker 或新的代理运行框架。
 
-**Spec:** `docs/superpowers/specs/2026-10-19-multica-review-and-simplification-design.md`。该文件是本计划的审查证据和设计依据；两份文件均等待用户评审，本轮不开始实施。
+**Spec:** `docs/superpowers/specs/2026-10-19-multica-review-and-simplification-design.md`。该文件是本计划的审查证据和设计依据；用户已批准执行；实施期间的群聊范围、放行名单与 UI 要求以 Spec 顶部最终要求为准。
 
 ## Global Constraints
 
 - Python 最低 3.10，AstrBot 最低 4.27.2；继续验证原有两个 AstrBot 源码版本。
 - 插件标识、数据目录、api_url/token 旧字段不变；加载不回写，写入前备份，损坏配置保留。
-- 工作模式按平台实例、自身账号和窗口隔离；群内上下文共享，来源前缀保持。
+- 工作模式按平台实例、自身账号和窗口隔离；同群仅转发开启者文字，其他成员保留普通管线，来源前缀保持。
 - 退出不会自动取消远端任务；stop 保持工作模式；工作失败不回落普通模型。
 - 主菜单 7 个入口；高级 Issue/inbox 保留；v1.1 不删除旧命令或别名。
 - NL 可执行 action 为 help/status/inbox/issue_create/work_enter；Issue 写入需本人短码确认，草稿期限 120 秒；work_enter 复用进入命令的权限和安全流程。
@@ -22,6 +22,7 @@
 - 日期以 Asia/Shanghai 解释；数量 1–50；名称须唯一精确匹配，ID 前缀至少 8 位且唯一。
 - 页面保留现有布局、字体、色彩体系、双语、浅色/暗色和手机适配。
 - 不在本轮推送、发布或变更线上配置；真实联调与发布需后续实施任务安排。
+- 统一 UID/UMO 放行名单，空名单拒绝；无群聊/私聊过滤模式。示例不用真实 ID；默认智能体采用可搜索自定义下拉。
 
 ## Review Focus
 

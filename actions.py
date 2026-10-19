@@ -5,12 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 ACTION_COMMANDS = {
-    "help": "multica help", "status": "multica status", "inbox": "multica inbox",
-    "issue_create": "multica issue create", "work_enter": "multica enter",
+    "help": "multica help",
+    "status": "multica status",
+    "inbox": "multica inbox",
+    "issue_create": "multica issue create",
+    "work_enter": "multica enter",
     "workspace_list": "multica workspace list",
     "workspace_select": "multica workspace select",
     "workspace_create": "multica workspace create",
-    "project_list": "multica project list", "project_select": "multica project select",
+    "project_list": "multica project list",
+    "project_select": "multica project select",
     "project_create": "multica project create",
 }
 NL_ACTIONS = {"help", "status", "inbox", "issue_create", "work_enter"}
@@ -23,6 +27,14 @@ MAIN_COMMANDS = (
     ("/multica status", "查看模式、连接和执行状态"),
     ("/multica help", "查看帮助"),
 )
+
+
+def help_text() -> str:
+    return (
+        "Multica 工作模式\n"
+        + "\n".join(f"{cmd} — {desc}" for cmd, desc in MAIN_COMMANDS)
+        + "\n\n高级功能：/multica inbox、/multica issue create\n兼容管理：workspace/project 的 list/select/create 仍可使用，默认工作区与项目全局生效，建议使用 WebUI 设置。\n自然语言：进入multica模式、切换为multica工作；创建 Issue 需本人确认。\n群聊仅开启者的文字转发；回复在群内可见。退出使用 /multica exit。"
+    )
 
 
 @dataclass(frozen=True)
@@ -47,14 +59,22 @@ def check_handler(handler, event, cfg: dict) -> bool:
     return True
 
 
-def authorize_action(plugin, event, action_name: str, astrbot_cfg: dict | None = None) -> bool:
+def authorize_action(
+    plugin, event, action_name: str, astrbot_cfg: dict | None = None
+) -> bool:
     try:
         command = ACTION_COMMANDS.get(action_name)
-        if not command or not plugin.cfg.get("enabled", True) or not plugin._chat_allowed(event):
+        if (
+            not command
+            or not plugin.cfg.get("enabled", True)
+            or not plugin._chat_allowed(event)
+        ):
             return False
         if astrbot_cfg is None:
             astrbot_cfg = plugin.context.get_config(event.unified_msg_origin)
-        return check_handler(plugin._find_work_handler(event, command), event, astrbot_cfg)
+        return check_handler(
+            plugin._find_work_handler(event, command), event, astrbot_cfg
+        )
     except Exception:
         # Missing registries/configuration are not permission to execute.
         return False
@@ -63,19 +83,41 @@ def authorize_action(plugin, event, action_name: str, astrbot_cfg: dict | None =
 async def dispatch_action(plugin, event, request: ActionRequest) -> None:
     if not plugin._chat_allowed(event):
         from .multica_client import PERMISSION_DENIED
+
         await plugin._reply(event, PERMISSION_DENIED)
         return
     if not authorize_action(plugin, event, request.name):
         await plugin._reply(event, "权限不足或指令已停用，无法执行此 Multica 操作。")
         return
     if request.source != "command" and request.name not in NL_ACTIONS:
-        await plugin._reply(event, "工作区和项目管理请使用 WebUI → Multica桥接 → 设置；旧管理命令仍兼容。")
+        await plugin._reply(
+            event,
+            "工作区和项目管理请使用 WebUI → Multica桥接 → 设置；旧管理命令仍兼容。",
+        )
         return
     args = str(request.fields.get("args") or "")
-    if request.name == "issue_create" and request.source != "command":
-        await plugin._reply(event, "请使用 /multica issue create 明确创建 Issue。")
+    if request.name == "work_enter":
+        service = getattr(plugin, "_work_mode", None)
+        if not service:
+            await plugin._reply(event, "工作模式未就绪，请检查插件日志。")
+            return
+        await service.enter_from_intent(event)
         return
+    if request.name == "issue_create" and request.source != "command":
+        from .natural_language import handle_issue_request
+
+        await handle_issue_request(plugin, event, request)
+        return
+    if request.name == "inbox" and "count" in request.fields:
+        args = f"{request.fields['count']} {request.fields.get('status', '')}".strip()
     method = getattr(plugin, "_cmd_" + request.name, None)
+    service = getattr(plugin, "_work_mode", None)
+    if request.name == "status" and service:
+        from .session_store import conversation_key
+
+        if service.store.get(conversation_key(event)).get("session_id"):
+            await service._status(event, conversation_key(event))
+            return
     if method:
         if request.name in {"help", "status", "workspace_list", "project_list"}:
             await method(event)

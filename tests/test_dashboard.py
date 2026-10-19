@@ -17,6 +17,7 @@ def test_dashboard_lists_scoped_work_sessions_and_can_exit_one(tmp_path, monkeyp
             "work_mode_enabled": True,
             "token": "must-stay-private",
             "api_url": "https://example.test",
+            "multica_whitelist": ["u1"],
         }
         service, _, _ = setup_service(tmp_path)
         service.plugin = plugin
@@ -42,5 +43,29 @@ def test_dashboard_lists_scoped_work_sessions_and_can_exit_one(tmp_path, monkeyp
             )
         finally:
             await service.close()
+
+    asyncio.run(run())
+
+
+def test_context_options_are_returned_without_credentials(tmp_path, monkeypatch):
+    async def run():
+        _install_astrbot_stubs()
+        main = importlib.import_module("astrbot_plugin_multica_bridge.main")
+        client = importlib.import_module("astrbot_plugin_multica_bridge.multica_client")
+        plugin = main.Main(SimpleNamespace())
+        plugin.cfg = {"token": "secret"}
+
+        async def workspaces(self):
+            return {
+                "ok": True,
+                "workspaces": [
+                    {"id": "ws1", "name": "A", "slug": "a", "private_field": "secret"}
+                ],
+            }
+
+        monkeypatch.setattr(client.MulticaClient, "list_workspaces", workspaces)
+        result = await plugin.api_action_list_workspaces()
+        assert result["data"]["workspaces"] == [{"id": "ws1", "name": "A", "slug": "a"}]
+        assert "secret" not in str(result)
 
     asyncio.run(run())

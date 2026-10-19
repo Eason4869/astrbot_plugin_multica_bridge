@@ -52,6 +52,22 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
       await page.locator("#field-token").inputValue(),
       original.token,
     );
+    assert.equal(await page.locator("#field-group_chat_mode").count(), 0);
+    assert.equal(await page.locator("#field-private_chat_mode").count(), 0);
+    assert.equal(await page.locator(".allowlist-example").count(), 3);
+    assert.equal(await page.locator(".reference-item").count(), 7);
+    assert.match(await page.locator("#allowlist-help").textContent(), /机器人ID:FriendMessage:用户QQ号/);
+    assert.match(await page.locator("#allowlist-help").textContent(), /机器人ID:GroupMessage:群号/);
+    const allowlist = ["用户QQ号", "机器人ID:FriendMessage:用户QQ号", "机器人ID:GroupMessage:群号", "demo-private-user"];
+    await page.locator("#field-multica_whitelist").fill(allowlist.join("\n"));
+    await saved();
+    await page.reload(); await loaded();
+    assert.deepEqual(read().multica_whitelist, allowlist);
+    assert.equal(await page.locator("#field-multica_whitelist").inputValue(), allowlist.join("\n"));
+    await page.locator("#btn-workspaces").click();
+    await page.waitForFunction(() => document.querySelectorAll("#workspace-options option").length === 1);
+    await page.locator("#btn-projects").click();
+    await page.waitForFunction(() => document.querySelectorAll("#project-options option").length === 1);
     await page.screenshot({
       path: path.join(directory, "desktop-light.png"),
       fullPage: true,
@@ -131,7 +147,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
     );
     assert.match(
       await page.locator("#session-list").textContent(),
-      /246801357/,
+      /demo-private-user/,
     );
     assert.equal(read().token, original.token);
     await page.goto("http://127.0.0.1:18764/?locale=en-US&dark=1");
@@ -152,6 +168,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
       errors,
       remoteRequests: remote,
       checks: [
+        "UID/private UMO/group UMO saved and restored",
+        "old group/private filter modes removed",
+        "7 commands match server reference",
+        "workspace/project options",
         "old URL/Token retained",
         "masked Token only",
         "new settings persisted after reload",

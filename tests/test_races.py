@@ -12,10 +12,12 @@ def test_stop_invalidates_local_queue_without_waiting_for_history(tmp_path):
         try:
             await service.handle(Event())
             await service.worker.close()
+
             async def history(*args):
                 started.set()
                 await proceed.wait()
                 return []
+
             client.messages = history
             tasks.append(asyncio.create_task(service.handle(Event("old-1"))))
             await started.wait()
@@ -29,6 +31,7 @@ def test_stop_invalidates_local_queue_without_waiting_for_history(tmp_path):
             proceed.set()
             await asyncio.gather(*tasks, return_exceptions=True)
             await service.close()
+
     asyncio.run(run())
 
 
@@ -40,13 +43,16 @@ def test_stop_waits_for_inflight_post_before_remote_cancellation(tmp_path):
         try:
             await service.handle(Event())
             await service.worker.close()
+
             async def send(*args):
                 started.set()
                 await proceed.wait()
                 trace.append("accepted")
                 return {"message_id": "m", "task_id": "t"}
+
             async def stop(*args):
                 trace.append("stop")
+
             client.send_chat, client.stop = send, stop
             tasks.append(asyncio.create_task(service.handle(Event("in flight"))))
             await started.wait()
@@ -64,6 +70,7 @@ def test_stop_waits_for_inflight_post_before_remote_cancellation(tmp_path):
             proceed.set()
             await asyncio.gather(*tasks, return_exceptions=True)
             await service.close()
+
     asyncio.run(run())
 
 

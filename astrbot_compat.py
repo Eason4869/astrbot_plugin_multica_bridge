@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import inspect
 
-from .session_store import conversation_key
-
 GUARDS = (
     "WhitelistCheckStage",
     "SessionStatusCheckStage",
@@ -49,6 +47,7 @@ class WorkModeRouter:
         router = self
 
         async def route(scheduler, event, from_stage=0):
+            event._multica_scheduler = scheduler
             if (
                 from_stage
                 or router.service.closed
@@ -73,7 +72,6 @@ class WorkModeRouter:
 
     async def _owned(self, scheduler, event) -> None:
         cfg = scheduler.ctx.astrbot_config
-        state = self.service.store.get(conversation_key(event))
         # Work mode receives every message in the window. Never feed the bot's
         # own echoed output back to Multica, regardless of the ordinary wake policy.
         if event.get_self_id() and str(event.get_self_id()) == str(
@@ -121,6 +119,7 @@ class WorkModeRouter:
         allowed = getattr(self.service.plugin, "_chat_allowed", None)
         if allowed and not allowed(event):
             from .multica_client import PERMISSION_DENIED
+
             # Denial is deliberately exact, without the work-result prefix.
             await self.service.say(event, PERMISSION_DENIED)
             return

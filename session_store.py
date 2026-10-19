@@ -54,6 +54,12 @@ class SessionStore:
                 ):
                     raise ValueError("工作模式会话记录损坏；原文件未修改")
                 item = dict(item)
+                if (
+                    item.get("chat_type") == "private"
+                    and not item.get("owner_id")
+                    and item.get("chat_id")
+                ):
+                    item["owner_id"] = str(item["chat_id"])
                 if item.get("chat_type") == "group" and not item.get("owner_id"):
                     item["active"] = False
                     item["owner_migration_required"] = True
