@@ -89,8 +89,7 @@ class WorkModeMixin:
         return best
 
     def authorize_work_event(self, event, cfg: dict) -> bool:
-        from astrbot.core.star.filter.command import CommandFilter
-        from astrbot.core.star.filter.command_group import CommandGroupFilter
+        from .actions import check_handler
 
         handler = self._find_work_handler(event)
         if handler is None:
@@ -107,14 +106,8 @@ class WorkModeMixin:
                 return False
             checks.append(entry)
         for candidate in checks:
-            if not candidate.enabled:
+            if not check_handler(candidate, event, cfg):
                 return False
-            for item in candidate.event_filters:
-                if isinstance(item, (CommandFilter, CommandGroupFilter)):
-                    if not item.custom_filter_ok(event, cfg):
-                        return False
-                elif not item.filter(event, cfg):
-                    return False
         return True
 
     async def dispatch_legacy(self, event, tail: str) -> None:

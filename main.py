@@ -254,6 +254,8 @@ class Main(WorkModeMixin, WebApiMixin, Star):
 
         if not cfg.get("nl_enabled", True):
             return
+        if not cfg.get("enabled", True):
+            return
         if not self._chat_allowed(event):
             # 与历史行为一致：被过滤时不终止，交回 LLM / 其它插件
             return
@@ -368,35 +370,10 @@ class Main(WorkModeMixin, WebApiMixin, Star):
 
     async def _execute_nl_intent(self, event: AstrMessageEvent, intent: NLIntent) -> None:
         """把自然语言意图分发到既有子指令实现。"""
-        action = intent.action
-        args = intent.args or ""
-        try:
-            if action == "help":
-                await self._cmd_help(event)
-            elif action == "status":
-                await self._cmd_status(event)
-            elif action == "inbox":
-                await self._cmd_inbox(event, args)
-            elif action == "issue_create":
-                await self._cmd_issue_create(event, args)
-            elif action == "workspace_list":
-                await self._cmd_workspace_list(event)
-            elif action == "workspace_select":
-                await self._cmd_workspace_select(event, args)
-            elif action == "workspace_create":
-                await self._cmd_workspace_create(event, args)
-            elif action == "project_list":
-                await self._cmd_project_list(event)
-            elif action == "project_select":
-                await self._cmd_project_select(event, args)
-            elif action == "project_create":
-                await self._cmd_project_create(event, args)
-            else:
-                await self._reply(event, self._nl_usage_text("multica"))
-        except Exception as e:
-            self.log.error("[multica_bridge] 自然语言意图执行失败 (%s): %s", action, e)
-            await self._reply(event, f"❌ 执行自然语言操作失败：{e}")
+        from .actions import ActionRequest, dispatch_action
 
+        await dispatch_action(self, event, ActionRequest(intent.action, {"args": intent.args}, intent.source))
+        return
     # ── 统一入口守卫 ──
 
     async def _run(
