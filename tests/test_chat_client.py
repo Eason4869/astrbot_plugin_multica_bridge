@@ -22,6 +22,19 @@ def test_chat_roundtrip_retains_old_url_and_auth_and_uses_workspace():
             )
             if request.path.endswith("/agents"):
                 return web.json_response([{"id": "agent-1", "name": "开发助手"}])
+            if request.path.endswith("/projects"):
+                assert (
+                    request.query["workspace_id"]
+                    == "00000000-0000-0000-0000-000000000001"
+                )
+                return web.json_response(
+                    [
+                        {
+                            "id": "project-1",
+                            "workspace_id": "00000000-0000-0000-0000-000000000001",
+                        }
+                    ]
+                )
             if request.path.endswith("/messages/page"):
                 return web.json_response(
                     {
@@ -77,13 +90,14 @@ def test_chat_roundtrip_retains_old_url_and_auth_and_uses_workspace():
             assert all(
                 call[2]["X-Workspace-ID"] == "00000000-0000-0000-0000-000000000001"
                 for call in calls
+                if not call[1].endswith("/projects")
             )
-            assert calls[1][3] == {
+            assert calls[2][3] == {
                 "agent_id": "agent-1",
                 "title": "QQ 工作",
                 "project_id": "project-1",
             }
-            assert calls[2][3] == {"content": "你好"}
+            assert calls[3][3] == {"content": "你好"}
         finally:
             await runner.cleanup()
 

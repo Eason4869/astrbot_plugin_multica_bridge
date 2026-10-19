@@ -93,3 +93,32 @@ def test_natural_enter_routes_before_wake_and_preserves_original_text(tmp_path):
             await service.close()
 
     asyncio.run(run())
+
+
+def test_non_owner_can_use_independent_commands_but_not_control_starters_chat(tmp_path):
+    async def run():
+        service, client, _ = setup_service(tmp_path)
+        calls = []
+
+        async def dispatch(event, tail):
+            calls.append(tail)
+
+        service.plugin.dispatch_legacy = dispatch
+        try:
+            await service.handle(Event(user="owner"))
+            await service.handle(Event("/multica inbox", user="friend"))
+            await service.handle(Event("/multica issue create demo", user="friend"))
+            status = Event("/multica status", user="friend")
+            await service.handle(status)
+            assert calls == ["inbox", "issue create demo"]
+            assert (
+                status.replies
+                and "权限" not in status.replies[0]
+                and "其他成员" not in status.replies[0]
+            )
+            await service.handle(Event("/multica new", user="friend"))
+            assert len(client.created) == 1
+        finally:
+            await service.close()
+
+    asyncio.run(run())

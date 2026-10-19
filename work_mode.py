@@ -139,7 +139,11 @@ class WorkMode:
         owner = (
             state.get("owner_id") if state["active"] else self.opening_owners.get(key)
         )
-        if owner and owner != str(event.get_sender_id()) and control != "help":
+        if (
+            owner
+            and owner != str(event.get_sender_id())
+            and control in {"enter", "exit", "new", "agent", "stop"}
+        ):
             await self.reply(
                 event,
                 "本群工作会话由其他成员开启，仅开启者可发送或控制；你的普通消息继续由 AstrBot 处理。",
@@ -270,11 +274,16 @@ class WorkMode:
             event.stop_event()
 
     async def _stop(self, event, key: str) -> None:
+        self.submission_epochs[key] = self.submission_epochs.get(key, 0) + 1
         state = self.store.get(key)
         if not state.get("session_id"):
-            await self.reply(event, "当前没有绑定的 Multica 对话。")
+            await self.reply(
+                event,
+                "本地旧排队消息已丢弃；当前没有绑定的 Multica 对话，正在创建的远端会话结果尚待确认。"
+                if self.opening.get(key)
+                else "本地旧排队消息已丢弃；当前没有绑定的 Multica 对话。",
+            )
             return
-        self.submission_epochs[key] = self.submission_epochs.get(key, 0) + 1
         self.stopping.add(key)
         try:
             inflight = self.submissions.get(key)
@@ -285,6 +294,7 @@ class WorkMode:
                     pass
             if self.store.get(key)["generation"] != event._multica_generation:
                 return
+            self._require_current_permission(event)
             await self._client(state).stop(state["session_id"])
             uncertain = self.store.get(key).get("uncertain")
             await self.reply(
@@ -301,6 +311,17 @@ class WorkMode:
         return self.client_factory(
             dict(self.plugin.cfg, workspace_id=state["workspace_id"])
         )
+
+    def _require_current_permission(self, event) -> None:
+        authorize = getattr(self.plugin, "authorize_work_event", None)
+        if authorize:
+            try:
+                cfg = self.plugin.context.get_config(event.unified_msg_origin)
+                allowed = authorize(event, cfg)
+            except Exception:
+                allowed = False
+            if not allowed:
+                raise MulticaError("权限不足或指令已停用，未执行此 Multica 操作")
 
     async def _enter(self, event, key: str, fresh: bool, choice: str) -> None:
         previous = self.store.get(key)
@@ -343,6 +364,7 @@ class WorkMode:
                 raise MulticaError("连接配置已变化，请重新进入工作模式")
             if not self._delivery_permitted(policy):
                 raise MulticaError("工作转发已暂停，请检查开关和访问规则")
+            self._require_current_permission(event)
             current = self.store.update(
                 key,
                 active=True,
@@ -383,6 +405,18 @@ class WorkMode:
                 raise MulticaError("连接配置已变化，请重新进入工作模式")
             if not self._delivery_permitted(policy):
                 raise MulticaError("工作转发已暂停，请检查开关和访问规则")
+            self._require_current_permission(event)
+
+            def write_guard():
+                self._require_current_permission(event)
+                if connection_key(
+                    self.plugin.cfg
+                ) != fingerprint or not self._delivery_permitted(policy):
+                    raise MulticaError("配置或访问规则已变化，未创建工作对话")
+                if self.store.get(key)["generation"] != generation:
+                    raise MulticaError("工作会话已变化，未创建工作对话")
+
+            client.write_guard = write_guard
             chat = await client.create_chat(
                 selected["id"],
                 "QQ 工作对话",
@@ -396,6 +430,7 @@ class WorkMode:
                 raise MulticaError("连接配置已变化，未绑定旧服务器的对话，请重新进入")
             if not self._delivery_permitted(policy):
                 raise MulticaError("工作转发已暂停，请检查开关和访问规则")
+            self._require_current_permission(event)
             group = str(event.get_group_id() or "")
             origin = event.unified_msg_origin
             if group:
@@ -517,6 +552,7 @@ class WorkMode:
         self._client(state)  # Revalidate after the await, before any external write.
         if not self._delivery_permitted(state):
             raise MulticaError("工作转发已暂停，请检查开关和访问规则")
+        self._require_current_permission(event)
         self.store.update(
             key,
             uncertain={

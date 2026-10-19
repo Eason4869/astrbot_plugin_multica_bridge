@@ -33,7 +33,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
       await page.locator("#btn-agent-toggle").click();
       const box = await page.locator("#agent-menu").boundingBox();
       assert.ok(box.x >= 0 && box.x + box.width <= width, JSON.stringify(box));
-      await page.screenshot({path: `.validation/screenshots/agent-picker-${width}.png`, fullPage: true});
+      await page.screenshot({path: `.validation/screenshots/agent-picker-${width}.png`, fullPage: true, animations: "disabled"});
       await page.locator("#agent-search").press("Escape");
     }
     assert.deepEqual(errors, []);

@@ -66,6 +66,11 @@ def apply_context_update(
         updated["workspace_id"] = workspace
     project = str(updated.get("project_id") or "")
     if project:
+        if not workspace:
+            if len(workspaces) != 1 or not workspaces[0].get("id"):
+                raise ValueError("请选择明确的工作区后再选择项目")
+            workspace = str(workspaces[0]["id"])
+            updated["workspace_id"] = workspace
         selected = resolve_unique_resource(project, projects, "title")
         if selected.get("workspace_id") and str(selected["workspace_id"]) != workspace:
             raise ValueError("项目不属于选定工作区")
@@ -309,6 +314,27 @@ class MulticaClient:
         if wsid:
             self._workspace_id = str(wsid)
 
+    async def validate_project(self, project_id: str) -> str:
+        """Resolve a project within this client's effective workspace before writes."""
+        if not project_id:
+            return ""
+        await self._ensure_workspace_id()
+        result = await self.list_projects()
+        if not result.get("ok"):
+            raise ValueError("无法验证项目，请检查连接和工作区配置")
+        try:
+            project = resolve_unique_resource(
+                project_id, result.get("projects") or [], "title"
+            )
+        except ValueError as exc:
+            raise ValueError("项目不存在或不唯一，请重新选择项目") from exc
+        if (
+            project.get("workspace_id")
+            and str(project["workspace_id"]) != self._workspace_id
+        ):
+            raise ValueError("项目不属于当前工作区，请重新选择项目")
+        return str(project["id"])
+
     async def create_issue(
         self,
         *,
@@ -345,6 +371,13 @@ class MulticaClient:
                 "message": "无法确定工作区：请检查 api_url/token，或手动填写 workspace_id",
             }
 
+        try:
+            effective_project = await self.validate_project(
+                project_id or self._project_id
+            )
+        except (ValueError, RuntimeError) as exc:
+            return {"ok": False, "message": str(exc)}
+
         payload: dict[str, Any] = {
             "title": title.strip(),
         }
@@ -356,10 +389,8 @@ class MulticaClient:
             payload["status"] = status
         if assignee_id:
             payload["assignee_id"] = assignee_id
-        if project_id:
-            payload["project_id"] = project_id
-        elif self._project_id:
-            payload["project_id"] = self._project_id
+        if effective_project:
+            payload["project_id"] = effective_project
         if parent_id:
             payload["parent_issue_id"] = parent_id
         if due_date:

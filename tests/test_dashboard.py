@@ -6,12 +6,13 @@ from test_commands import _install_astrbot_stubs
 from test_work_mode import Event, setup_service
 
 
-def test_dashboard_lists_scoped_work_sessions_and_can_exit_one(tmp_path, monkeypatch):
+def test_dashboard_lists_scoped_work_sessions_and_can_exit_one(
+    tmp_path, monkeypatch, nl_plugin
+):
     async def run():
-        _install_astrbot_stubs()
-        main = importlib.import_module("astrbot_plugin_multica_bridge.main")
         web = importlib.import_module("astrbot_plugin_multica_bridge.web_api")
-        plugin = main.Main(SimpleNamespace())
+        plugin, register, _ = nl_plugin
+        register("enter")
         plugin.cfg = {
             "enabled": True,
             "work_mode_enabled": True,

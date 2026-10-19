@@ -68,6 +68,15 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
     await page.waitForFunction(() => document.querySelectorAll("#workspace-options option").length === 1);
     await page.locator("#btn-projects").click();
     await page.waitForFunction(() => document.querySelectorAll("#project-options option").length === 1);
+    const priorProject = await page.locator("#field-project_id").inputValue();
+    await page.locator("#field-project_id").fill("project-one");
+    await saved();
+    await page.locator("#btn-refresh").click();
+    await page.waitForFunction(() => document.getElementById("session-list").textContent.includes("连接或项目已变化"));
+    await page.locator("#field-project_id").fill(priorProject);
+    await saved();
+    await page.locator("#btn-refresh").click();
+    await page.waitForFunction(() => !document.getElementById("session-list").textContent.includes("连接或项目已变化"));
     await page.screenshot({
       path: path.join(directory, "desktop-light.png"),
       fullPage: true,
@@ -172,6 +181,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
         "old group/private filter modes removed",
         "7 commands match server reference",
         "workspace/project options",
+        "context change pauses old sessions and shows reason",
         "old URL/Token retained",
         "masked Token only",
         "new settings persisted after reload",

@@ -161,8 +161,10 @@ def strip_keyword(text: str, keyword: str = "multica") -> str:
     t = text or ""
     if kw:
         t = re.sub(
-            r"(?<![a-zA-Z0-9_])" + re.escape(kw) + r"(?![a-zA-Z0-9_])",
-            " ",
+            r"^(\s*(?:(?:请|帮我|用|使用|看看|列出|查看|查询)[\s，,：:]*)*)"
+            + re.escape(kw)
+            + r"(?![a-zA-Z0-9_])",
+            r"\1 ",
             t,
             count=1,
             flags=re.IGNORECASE,

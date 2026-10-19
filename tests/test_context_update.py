@@ -52,3 +52,15 @@ def test_ambiguous_id_prefix_does_not_choose_first():
         MulticaClient({}).find_project(
             "12345678", [{"id": "12345678-1"}, {"id": "12345678-2"}]
         )
+
+
+def test_project_selection_resolves_single_automatic_workspace():
+    from astrbot_plugin_multica_bridge.multica_client import apply_context_update
+
+    result = apply_context_update(
+        {"workspace_id": "", "project_id": ""},
+        {"project_id": "p1"},
+        [{"id": "ws1", "slug": "demo"}],
+        [{"id": "p1", "workspace_id": "ws1"}],
+    )
+    assert result["workspace_id"] == "ws1" and result["project_id"] == "p1"

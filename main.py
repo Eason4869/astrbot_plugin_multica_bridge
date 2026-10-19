@@ -545,8 +545,12 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             )
             return
 
-        client = MulticaClient(self.cfg)
+        snapshot = dict(self.cfg)
+        client = MulticaClient(snapshot)
         result = await client.list_workspaces()
+        if self.cfg != snapshot:
+            await self._reply(event, "配置已变化，请重新选择工作区。")
+            return
         if not result["ok"]:
             await self._reply(event, f"❌ 获取工作区失败：{result['message']}")
             return
@@ -662,8 +666,12 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             )
             return
 
-        client = MulticaClient(self.cfg)
+        snapshot = dict(self.cfg)
+        client = MulticaClient(snapshot)
         result = await client.list_projects()
+        if self.cfg != snapshot:
+            await self._reply(event, "配置已变化，请重新选择项目。")
+            return
         if not result["ok"]:
             await self._reply(event, f"❌ 获取项目列表失败：{result['message']}")
             return
@@ -674,6 +682,11 @@ class Main(WorkModeMixin, WebApiMixin, Star):
                 event,
                 f"❌ 未找到项目 {target}。可用列表请查看 /multica project list",
             )
+            return
+
+        workspace = str(client._workspace_id or snapshot.get("workspace_id") or "")
+        if proj.get("workspace_id") and str(proj["workspace_id"]) != workspace:
+            await self._reply(event, "项目不属于当前工作区，请重新选择项目。")
             return
 
         pid = str(proj.get("id") or "").strip()

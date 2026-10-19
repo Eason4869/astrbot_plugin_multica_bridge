@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-19-multica-review-and-simplification-design.md`。该文件是本计划的审查证据和设计依据；用户已批准执行；实施期间的群聊范围、放行名单与 UI 要求以 Spec 顶部最终要求为准。
 
+**执行状态（2026-10-19）：** Task 1–6 已实施，Task 7 本地门槛通过；Python 3.10/3.12 各 182 项通过，Ruff 与 Edge 浏览器验证通过。独立审查的 7 项问题已修复并增加回归。以下清单保留原验收步骤，最终证据见 `docs/verification-1.1.0.md`。真实 QQ/Multica/Provider 40 条语料评测仍未验证，远程发布未执行，不能据此宣称上线验收完成。实施中新增统一放行名单、仅开启者转发和下拉框美化，覆盖此前共享群会话设计。仅交付本地 v1.1.0，未单独发布 1.0.1。
+
 ## Global Constraints
 
 - Python 最低 3.10，AstrBot 最低 4.27.2；继续验证原有两个 AstrBot 源码版本。
