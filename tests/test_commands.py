@@ -132,9 +132,11 @@ def _install_astrbot_stubs() -> None:
     path_mod = types.ModuleType("astrbot.core.utils.astrbot_path")
     path_mod.get_astrbot_data_path = lambda: "/tmp/astrbot"
 
+    api_mod = types.ModuleType("astrbot.api")
+    api_mod.logger = astrbot.logger
     modules = {
         "astrbot": astrbot,
-        "astrbot.api": types.ModuleType("astrbot.api"),
+        "astrbot.api": api_mod,
         "astrbot.api.event": event_mod,
         "astrbot.api.event.filter": filter_mod,
         "astrbot.api.star": star_mod,

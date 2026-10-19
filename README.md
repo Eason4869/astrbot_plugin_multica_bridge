@@ -6,7 +6,7 @@
 
 **在 QQ 中进入 Multica，连续对话，随时退出。**
 
-![Version](https://img.shields.io/badge/version-1.2.0-3456cf)
+![Version](https://img.shields.io/badge/version-1.2.1-3456cf)
 ![Branch](https://img.shields.io/badge/branch-main-475569)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)
 ![AstrBot](https://img.shields.io/badge/AstrBot-%E2%89%A54.27.2-4f8cff)
@@ -288,7 +288,7 @@ Remove-Variable multicaHeaders, multicaCredential, multicaSecureToken
 
 **已经验证了哪些环境？**
 
-Python 3.10 / 3.12 各 194 项测试通过，覆盖旧配置升级、多工作区发现与两个 AstrBot 源码版本；Edge 桌面/手机/主题/双语验证通过。远程检查见 [CI](https://github.com/Eason4869/astrbot_plugin_multica_bridge/actions/workflows/ci.yml)。尚未进行真实 QQ、Multica 和真实模型评测；自动化通过不代表线上联调完成。具体范围见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/dev/docs/verification-1.2.0.md)。
+Python 3.10 / 3.12 各 201 项测试通过，覆盖官方日志接口、旧配置升级、多工作区发现与两个 AstrBot 源码版本；1.2.0 的 Edge 桌面/手机/主题/双语验证继续适用，本次仅修复日志来源。远程检查见 [CI](https://github.com/Eason4869/astrbot_plugin_multica_bridge/actions/workflows/ci.yml)。尚未进行真实 QQ、Multica 和真实模型评测；自动化通过不代表线上联调完成。具体范围见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/dev/docs/verification-1.2.1.md)。
 
 ## 项目信息
 

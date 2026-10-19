@@ -26,7 +26,7 @@ FILES = (
     "config.example.json",
     "README.md",
     "CHANGELOG.md",
-    "docs/verification-1.2.0.md",
+    "docs/verification-1.2.1.md",
     "LICENSE",
     "logo.svg",
     "logo.png",
