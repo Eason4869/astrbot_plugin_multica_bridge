@@ -14,7 +14,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Coroutine
 
-from astrbot import logger
+from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star
 from astrbot.core.message.components import Plain
@@ -70,8 +70,7 @@ class Main(WorkModeMixin, WebApiMixin, Star):
         super().__init__(context)
         self.context = context
         self.config = config or {}
-        # Star 基类会注入插件级 logger；缺失时回退到全局 logger
-        self.log = getattr(self, "logger", None) or logger
+        self.log = logger
 
     async def initialize(self) -> None:
         """插件加载时初始化：构建运行时配置 + 注册 Web API。"""

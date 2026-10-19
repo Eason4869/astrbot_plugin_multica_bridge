@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from astrbot import logger
+from astrbot.api import logger
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .config import (

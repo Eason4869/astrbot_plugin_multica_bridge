@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-import logging
+
+from astrbot.api import logger
 
 PREFIX = "【来自 Multica｜工作模式】\n"
 
@@ -93,7 +94,7 @@ class ReplyWorker:
                 raise
             except Exception as exc:
                 delay = min(delay * 2, 30)
-                logging.getLogger(__name__).warning(
+                logger.warning(
                     "[multica_bridge] stage=reply-sync exception=%s retry_in=%ss",
                     type(exc).__name__,
                     delay,

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import logging
 import re
 import time
+
+from astrbot.api import logger
 
 from .chat_client import ChatClient, MulticaError
 from .reply_worker import ReplyWorker, reply_parts
@@ -31,7 +32,7 @@ class WorkMode:
         self.operations: set[asyncio.Task] = set()
         self.worker = ReplyWorker(store, push, self._delivery_permitted)
         self.closed = False
-        self.log = getattr(plugin, "log", logging.getLogger(__name__))
+        self.log = logger
 
     def _delivery_permitted(self, record: dict) -> bool:
         if self.closed:
