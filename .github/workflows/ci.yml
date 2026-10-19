@@ -16,15 +16,29 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - uses: actions/checkout@v5
+        with:
+          repository: AstrBotDevs/AstrBot
+          ref: v4.27.2
+          path: .validation/AstrBot-4.27.2
+
+      - uses: actions/checkout@v5
+        with:
+          repository: AstrBotDevs/AstrBot
+          ref: e5e21b71aec5642f110eb115eb8e9a0d8028b7e5
+          path: .validation/AstrBot
+
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dev tools
-        run: python -m pip install --upgrade pip ruff pytest pyyaml
+        run: python -m pip install --upgrade pip ruff pytest pyyaml aiohttp
 
       - name: Ruff lint
         run: ruff check .
 
       - name: Unit tests
+        env:
+          REQUIRE_UPSTREAM_TESTS: "1"
         run: python -m pytest

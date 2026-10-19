@@ -11,23 +11,28 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import tempfile
+import time
 from typing import Any
 
 CONFIG_DEFAULTS: dict[str, Any] = {
     "enabled": True,
     "api_url": "https://multica.ai",
     "token": "",
-    "workspace_id": "",   # 可选，留空则自动从 /api/workspaces 获取
-    "project_id": "",     # 可选
+    "workspace_id": "",  # 可选，留空则自动从 /api/workspaces 获取
+    "project_id": "",  # 可选
     # 消息过滤配置
-    "group_chat_mode": "blacklist",       # "blacklist" | "whitelist" | "disabled"
-    "group_chat_list": [],                # 群号列表
-    "private_chat_mode": "blacklist",     # "blacklist" | "whitelist" | "disabled"
-    "private_chat_list": [],              # QQ 号列表
+    "group_chat_mode": "blacklist",  # "blacklist" | "whitelist" | "disabled"
+    "group_chat_list": [],  # 群号列表
+    "private_chat_mode": "blacklist",  # "blacklist" | "whitelist" | "disabled"
+    "private_chat_list": [],  # QQ 号列表
     # 自然语言控制：消息中含关键词（默认 multica）时自动识别意图
     "nl_enabled": True,
     "nl_keyword": "multica",
-    "nl_llm_enabled": True,               # 规则解析失败时可选交给 LLM
+    "nl_llm_enabled": True,  # 规则解析失败时可选交给 LLM
+    "work_mode_enabled": True,
+    "default_agent_id": "",
 }
 
 
@@ -47,25 +52,72 @@ def deep_merge(base: dict, *overrides: Any) -> dict:
 
 def load_plugin_config(data_dir: str) -> dict[str, Any]:
     """读取插件自有配置文件 config.json。"""
-    try:
-        path = os.path.join(data_dir, "config.json")
-        if not os.path.exists(path):
-            return {}
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-        return data if isinstance(data, dict) else {}
-    except Exception:
+    path = os.path.join(data_dir, "config.json")
+    if not os.path.exists(path):
         return {}
+    with open(path, encoding="utf-8-sig") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError("config.json 必须是 JSON 对象；原文件未修改")
+    return data
 
 
 def save_plugin_config(data_dir: str, cfg: dict[str, Any]) -> None:
     """原子写插件自有配置文件。"""
     path = os.path.join(data_dir, "config.json")
-    tmp = path + ".tmp"
     os.makedirs(data_dir, exist_ok=True)
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(cfg, f, ensure_ascii=False, indent=2, default=str)
-    os.replace(tmp, path)
+    # Validate before backup/write. Never replace an unreadable old configuration.
+    original = load_plugin_config(data_dir)
+    if os.path.exists(path):
+        backup = os.path.join(data_dir, "config.pre-work-mode.json")
+        try:
+            with open(backup, "xb") as dst, open(path, "rb") as src:
+                shutil.copyfileobj(src, dst)
+        except FileExistsError:
+            pass
+    atomic_json_write(path, deep_merge(original, cfg))
+
+
+def atomic_json_write(path: str, value: dict) -> None:
+    """Use a unique temporary file so concurrent saves cannot share .tmp."""
+    directory = os.path.dirname(path)
+    os.makedirs(directory, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=".multica-", suffix=".tmp", dir=directory)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(value, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        # Windows scanners may briefly hold the destination without delete-share.
+        # Keep the old file intact and retry only the atomic replacement.
+        for attempt in range(5):
+            try:
+                os.replace(temporary, path)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.02)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def merge_config_update(current: dict, patch: dict) -> dict:
+    """Only explicit, non-placeholder credentials replace the working values."""
+    updated = dict(current)
+    for key, value in patch.items():
+        if key not in CONFIG_DEFAULTS:
+            continue
+        if key in ("api_url", "token"):
+            if not isinstance(value, str) or not value.strip():
+                continue
+            if key == "token" and "****" in value:
+                continue
+        updated[key] = coerce_to_default_type(value, CONFIG_DEFAULTS[key])
+    if patch.get("clear_token") is True:
+        updated["token"] = ""
+    return updated
 
 
 _TRUE_WORDS = {"1", "true", "yes", "y", "on", "是", "开", "启用"}
@@ -114,6 +166,8 @@ def coerce_to_default_type(value: Any, default: Any) -> Any:
     if isinstance(default, dict):
         if default:
             src = value if isinstance(value, dict) else {}
-            return {k: coerce_to_default_type(src.get(k), dv) for k, dv in default.items()}
+            return {
+                k: coerce_to_default_type(src.get(k), dv) for k, dv in default.items()
+            }
         return dict(value) if isinstance(value, dict) else {}
     return value

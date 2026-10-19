@@ -17,8 +17,8 @@ from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .config import (
     CONFIG_DEFAULTS,
-    coerce_to_default_type,
     deep_merge,
+    merge_config_update,
     save_plugin_config,
 )
 from .multica_client import mask_secret
@@ -59,12 +59,27 @@ class WebApiMixin:
         try:
             reg = self.context.register_web_api
         except Exception as e:
-            logger.error("[multica_bridge] 无法获取 register_web_api，Web API 未注册: %s", e)
+            logger.error(
+                "[multica_bridge] 无法获取 register_web_api，Web API 未注册: %s", e
+            )
             return
 
         prefix = f"/{PLUGIN_NAME}"
         routes: list[tuple[str, Any, list[str], str]] = [
             (f"{prefix}/config", self.api_config, ["GET"], "当前插件配置"),
+            (f"{prefix}/work_status", self.api_work_status, ["GET"], "工作模式状态"),
+            (
+                f"{prefix}/actions/list_agents",
+                self.api_action_list_agents,
+                ["POST"],
+                "读取智能体",
+            ),
+            (
+                f"{prefix}/actions/exit_session",
+                self.api_action_exit_session,
+                ["POST"],
+                "退出工作会话",
+            ),
             (
                 f"{prefix}/actions/save_config",
                 self.api_action_save_config,
@@ -119,17 +134,9 @@ class WebApiMixin:
             if not isinstance(body, dict):
                 return self._err("请求体必须是 JSON 对象")
 
-            cur = dict(getattr(self, "cfg", None) or {})
-            saved: list[str] = []
-            for k, v in body.items():
-                if k not in CONFIG_DEFAULTS:
-                    continue
-                # 跳过脱敏 token：前端加载配置时 token 已脱敏（如 tok****ken），
-                # 若保存时传来的 token 含掩码标记，说明用户未修改，保留原值
-                if k == "token" and isinstance(v, str) and "****" in v:
-                    continue
-                cur[k] = coerce_to_default_type(v, CONFIG_DEFAULTS[k])
-                saved.append(k)
+            previous = dict(getattr(self, "cfg", None) or {})
+            cur = merge_config_update(previous, body)
+            saved = [k for k in cur if cur[k] != previous.get(k)]
 
             data_dir = getattr(self, "_data_dir", None) or str(
                 Path(get_astrbot_data_path())
@@ -138,6 +145,9 @@ class WebApiMixin:
             )
             save_plugin_config(data_dir, cur)
             self.cfg = deep_merge(CONFIG_DEFAULTS, cur)
+            service = getattr(self, "_work_mode", None)
+            if service:
+                service.refresh()
 
             return self._ok({"saved": saved})
         except Exception as e:
@@ -155,3 +165,56 @@ class WebApiMixin:
         except Exception as e:
             logger.error("[multica_bridge] 连接测试失败: %s", e)
             return self._err(str(e))
+
+    async def api_work_status(self, **kwargs: Any) -> dict[str, Any]:
+        service = getattr(self, "_work_mode", None)
+        sessions = []
+        if service:
+            for key in service.store.records:
+                state = service.store.get(key)
+                if state["active"]:
+                    sessions.append(
+                        {
+                            "key": key,
+                            "chat_type": state.get("chat_type", "private"),
+                            "chat_id": state.get("chat_id", ""),
+                            "agent_name": state.get("agent_name", ""),
+                            "session_id": state.get("session_id", ""),
+                            "forwarding": service._delivery_permitted(state),
+                        }
+                    )
+        return self._ok(
+            {
+                "ready": bool(getattr(self, "_work_router", None)),
+                "sessions": sessions,
+                "error": getattr(self, "_work_error", ""),
+            }
+        )
+
+    async def api_action_list_agents(self, **kwargs: Any) -> dict[str, Any]:
+        from .chat_client import ChatClient, MulticaError
+
+        try:
+            agents = await ChatClient(self.cfg).list_agents()
+            return self._ok(
+                {
+                    "agents": [
+                        {"id": a["id"], "name": a.get("name") or a["id"]}
+                        for a in agents
+                    ]
+                }
+            )
+        except MulticaError as exc:
+            return self._err(str(exc))
+
+    async def api_action_exit_session(self, **kwargs: Any) -> dict[str, Any]:
+        service = getattr(self, "_work_mode", None)
+        body = await _read_json_body()
+        key = body.get("key") if isinstance(body, dict) else None
+        if not service or not isinstance(key, str) or key not in service.store.records:
+            return self._err("工作会话不存在")
+        state = service.store.get(key)
+        service.store.update(key, active=False, generation=state["generation"] + 1)
+        service.opening.pop(key, None)
+        service.worker.cancel(key)
+        return self._ok({"exited": True})

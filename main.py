@@ -22,6 +22,7 @@ from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .nl_control import NLIntent
 from .web_api import WebApiMixin
+from .work_mode_integration import WorkModeMixin
 
 _STATUS_ICONS = {
     "todo": "🔴",
@@ -58,7 +59,7 @@ _VALID_STATUS = (
 )
 
 
-class Main(WebApiMixin, Star):
+class Main(WorkModeMixin, WebApiMixin, Star):
     """Multica 桥接插件入口。
 
     继承 WebApiMixin 注册 REST API（/config、/actions/save_config、
@@ -85,15 +86,18 @@ class Main(WebApiMixin, Star):
                 load_plugin_config(data_dir),
             )
         except Exception as e:
-            self.log.warning("[multica_bridge] 加载配置失败，使用默认值: %s", e)
+            self.log.warning("[multica_bridge] Config unreadable (%s); disk file preserved", type(e).__name__)
             from .config import CONFIG_DEFAULTS
 
             self.cfg = dict(CONFIG_DEFAULTS)
+            self.cfg["enabled"] = False
 
         try:
             self.register_routes()
         except Exception as e:
             self.log.warning("[multica_bridge] Web API 注册失败: %s", e)
+
+        await self.initialize_work_mode()
 
     # ── 指令组：/multica ──
     #
@@ -108,6 +112,37 @@ class Main(WebApiMixin, Star):
     @filter.command_group("multica")
     def multica(self) -> None:
         """Multica 桥接指令组。"""
+
+    @multica.command("enter")
+    async def multica_enter(self, event: AstrMessageEvent) -> None:
+        """进入或恢复当前窗口的工作模式。"""
+        await self.work_control(event)
+
+    @multica.command("exit")
+    async def multica_exit(self, event: AstrMessageEvent) -> None:
+        """退出当前窗口的工作模式。"""
+        await self.work_control(event)
+
+    @multica.command("new")
+    async def multica_new(self, event: AstrMessageEvent) -> None:
+        """新建 Multica 对话。"""
+        await self.work_control(event)
+
+    @multica.command("agent")
+    async def multica_agent(self, event: AstrMessageEvent) -> None:
+        """选择当前窗口的智能体：/multica agent <编号或ID>。"""
+        await self.work_control(event)
+
+    @multica.command("stop")
+    async def multica_stop(self, event: AstrMessageEvent) -> None:
+        """停止 Multica 执行但保持工作模式。"""
+        await self.work_control(event)
+
+    @filter.event_message_type(filter.EventMessageType.ALL, priority=10000)
+    async def on_multica_work_mode(self, event: AstrMessageEvent) -> None:
+        service = getattr(self, "_work_mode", None)
+        if service and service.should_route(event):
+            await self.work_control(event)
 
     @multica.command("help", alias={"帮助", "h"})
     async def multica_help(self, event: AstrMessageEvent) -> None:
@@ -908,6 +943,13 @@ class Main(WebApiMixin, Star):
 
     async def _reply(self, event: AstrMessageEvent, text: str) -> None:
         """向消息来源回复。"""
+        from .reply_worker import PREFIX
+        service = getattr(self, "_work_mode", None)
+        key = getattr(event, "_multica_key", None)
+        if key is not None and service and (service.closed or service.store.get(key)["generation"] != event._multica_generation):
+            return
+        if getattr(event, "_multica_owned", False) and not text.startswith(PREFIX):
+            text = PREFIX + text
         try:
             await event.send(MessageChain([Plain(text)]))
         except Exception as e:

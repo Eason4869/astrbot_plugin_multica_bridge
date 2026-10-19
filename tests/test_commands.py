@@ -63,7 +63,9 @@ def _register_command(command_name=None, sub_command=None, alias=None, **_kwargs
     return decorator
 
 
-def _register_command_group(command_group_name=None, sub_command=None, alias=None, **_kwargs):
+def _register_command_group(
+    command_group_name=None, sub_command=None, alias=None, **_kwargs
+):
     if isinstance(command_group_name, RegisteringCommandable):
         group = _Group(sub_command, parent=command_group_name.parent_group, alias=alias)
     else:
@@ -118,7 +120,9 @@ def _install_astrbot_stubs() -> None:
         command=_register_command,
         command_group=_register_command_group,
         event_message_type=_event_message_type,
-        EventMessageType=types.SimpleNamespace(ALL="ALL", GROUP="GROUP", PRIVATE="PRIVATE"),
+        EventMessageType=types.SimpleNamespace(
+            ALL="ALL", GROUP="GROUP", PRIVATE="PRIVATE"
+        ),
     )
     star_mod = types.ModuleType("astrbot.api.star")
     star_mod.Context = Context
@@ -151,6 +155,11 @@ def plugin_main():
 
 
 EXPECTED_COMMANDS = {
+    "multica enter",
+    "multica exit",
+    "multica new",
+    "multica agent",
+    "multica stop",
     # 一级
     "multica help",
     "multica 帮助",
@@ -243,7 +252,9 @@ class TestParseFlags:
 
 class TestArgs:
     def test_strips_command_words(self, plugin_main) -> None:
-        event = types.SimpleNamespace(message_str="multica workspace create 项目A --slug a")
+        event = types.SimpleNamespace(
+            message_str="multica workspace create 项目A --slug a"
+        )
         assert plugin_main.Main._args(event, 3) == "项目A --slug a"
 
     def test_no_tail_returns_empty(self, plugin_main) -> None:
