@@ -22,11 +22,7 @@ CONFIG_DEFAULTS: dict[str, Any] = {
     "token": "",
     "workspace_id": "",  # 可选，留空则自动从 /api/workspaces 获取
     "project_id": "",  # 可选
-    # 消息过滤配置
-    "group_chat_mode": "blacklist",  # "blacklist" | "whitelist" | "disabled"
-    "group_chat_list": [],  # 群号列表
-    "private_chat_mode": "blacklist",  # "blacklist" | "whitelist" | "disabled"
-    "private_chat_list": [],  # QQ 号列表
+    "multica_whitelist": [],  # 群聊和私聊统一按发送者 ID 授权；留空拒绝所有用户
     # 自然语言控制：消息中含关键词（默认 multica）时自动识别意图
     "nl_enabled": True,
     "nl_keyword": "multica",
@@ -59,6 +55,8 @@ def load_plugin_config(data_dir: str) -> dict[str, Any]:
         data = json.load(f)
     if not isinstance(data, dict):
         raise ValueError("config.json 必须是 JSON 对象；原文件未修改")
+    if "multica_whitelist" not in data and data.get("private_chat_mode") == "whitelist":
+        data["multica_whitelist"] = list(data.get("private_chat_list") or [])
     return data
 
 
@@ -106,6 +104,12 @@ def atomic_json_write(path: str, value: dict) -> None:
 def merge_config_update(current: dict, patch: dict) -> dict:
     """Only explicit, non-placeholder credentials replace the working values."""
     updated = dict(current)
+    if "multica_whitelist" in patch:
+        value = patch["multica_whitelist"]
+        if not isinstance(value, list) or any(
+            isinstance(i, bool) or not isinstance(i, (str, int)) for i in value
+        ):
+            raise ValueError("Multica 白名单必须是用户 ID 列表")
     for key, value in patch.items():
         if key not in CONFIG_DEFAULTS:
             continue
@@ -115,6 +119,10 @@ def merge_config_update(current: dict, patch: dict) -> dict:
             if key == "token" and "****" in value:
                 continue
         updated[key] = coerce_to_default_type(value, CONFIG_DEFAULTS[key])
+        if key == "multica_whitelist":
+            updated[key] = list(
+                dict.fromkeys(str(i).strip() for i in value if str(i).strip())
+            )
     if patch.get("clear_token") is True:
         updated["token"] = ""
     return updated

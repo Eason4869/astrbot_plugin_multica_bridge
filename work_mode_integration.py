@@ -5,7 +5,7 @@ from __future__ import annotations
 from .astrbot_compat import WorkModeRouter
 from .reply_worker import PREFIX
 from .session_store import SessionStore
-from .work_mode import COMMAND, WorkMode
+from .work_mode import COMMAND, CONTROLS, WorkMode
 
 
 class WorkModeMixin:
@@ -89,15 +89,16 @@ class WorkModeMixin:
         return best
 
     def authorize_work_event(self, event, cfg: dict) -> bool:
-        from astrbot.core.star.filter.command import CommandFilter
-        from astrbot.core.star.filter.command_group import CommandGroupFilter
+        from .actions import check_handler
 
         handler = self._find_work_handler(event)
         if handler is None:
             # Unknown /multica controls only display help; no external operation.
-            return (
-                True if COMMAND.fullmatch((event.message_str or "").strip()) else False
-            )
+            match = COMMAND.fullmatch((event.message_str or "").strip())
+            action = (
+                (match.group(1) or "enter").split()[0] if match else "enter"
+            ).casefold()
+            return bool(match and action not in CONTROLS)
         checks = [handler]
         match = COMMAND.fullmatch((event.message_str or "").strip())
         action = ((match.group(1) or "enter").split()[0] if match else "enter").lower()
@@ -107,14 +108,8 @@ class WorkModeMixin:
                 return False
             checks.append(entry)
         for candidate in checks:
-            if not candidate.enabled:
+            if not check_handler(candidate, event, cfg):
                 return False
-            for item in candidate.event_filters:
-                if isinstance(item, (CommandFilter, CommandGroupFilter)):
-                    if not item.custom_filter_ok(event, cfg):
-                        return False
-                elif not item.filter(event, cfg):
-                    return False
         return True
 
     async def dispatch_legacy(self, event, tail: str) -> None:

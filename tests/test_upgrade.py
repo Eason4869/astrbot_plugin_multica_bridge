@@ -85,11 +85,13 @@ def test_atomic_save_retries_transient_windows_file_lock(tmp_path, monkeypatch):
     path = tmp_path / "state.json"
     original = config.os.replace
     attempts = []
+
     def locked_once(source, target):
         attempts.append(target)
         if len(attempts) < 3:
             raise PermissionError("Transient external file lock")
         original(source, target)
+
     monkeypatch.setattr(config.os, "replace", locked_once)
     config.atomic_json_write(str(path), {"active": True})
     assert json.loads(path.read_text())["active"]

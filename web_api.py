@@ -66,6 +66,24 @@ class WebApiMixin:
 
         prefix = f"/{PLUGIN_NAME}"
         routes: list[tuple[str, Any, list[str], str]] = [
+            (
+                f"{prefix}/actions/list_workspaces",
+                self.api_action_list_workspaces,
+                ["POST"],
+                "工作区选项",
+            ),
+            (
+                f"{prefix}/actions/list_projects",
+                self.api_action_list_projects,
+                ["POST"],
+                "项目选项",
+            ),
+            (
+                f"{prefix}/command_reference",
+                self.api_command_reference,
+                ["GET"],
+                "命令说明",
+            ),
             (f"{prefix}/config", self.api_config, ["GET"], "当前插件配置"),
             (f"{prefix}/work_status", self.api_work_status, ["GET"], "工作模式状态"),
             (
@@ -116,6 +134,13 @@ class WebApiMixin:
         try:
             cfg = getattr(self, "cfg", None) or {}
             out = dict(cfg) if isinstance(cfg, dict) else {}
+            for key in (
+                "group_chat_mode",
+                "group_chat_list",
+                "private_chat_mode",
+                "private_chat_list",
+            ):
+                out.pop(key, None)
             if out.get("token"):
                 out["token"] = mask_secret(out["token"])
             return self._ok(out)
@@ -136,6 +161,35 @@ class WebApiMixin:
 
             previous = dict(getattr(self, "cfg", None) or {})
             cur = merge_config_update(previous, body)
+            context_changed = any(
+                cur.get(key) != previous.get(key)
+                for key in ("workspace_id", "project_id")
+            )
+            if context_changed:
+                from .multica_client import MulticaClient, apply_context_update
+
+                if (
+                    cur.get("workspace_id") != previous.get("workspace_id")
+                    and "project_id" not in body
+                ):
+                    cur["project_id"] = ""
+                client = MulticaClient(cur)
+                spaces = await client.list_workspaces()
+                if not spaces["ok"]:
+                    return self._err(spaces["message"])
+                projects = {"ok": True, "projects": []}
+                if cur.get("project_id"):
+                    projects = await client.list_projects()
+                    if not projects["ok"]:
+                        return self._err(projects["message"])
+                cur = apply_context_update(
+                    previous,
+                    dict(body, project_id=cur.get("project_id", "")),
+                    spaces["workspaces"],
+                    projects["projects"],
+                )
+                if previous != self.cfg:
+                    return self._err("配置已变化，请刷新后重新保存")
             saved = [k for k in cur if cur[k] != previous.get(k)]
 
             data_dir = getattr(self, "_data_dir", None) or str(
@@ -181,6 +235,8 @@ class WebApiMixin:
                             "agent_name": state.get("agent_name", ""),
                             "session_id": state.get("session_id", ""),
                             "forwarding": service._delivery_permitted(state),
+                            "owner_id": state.get("owner_id", ""),
+                            "pause_reason": self._pause_reason(service, state),
                         }
                     )
         return self._ok(
@@ -188,6 +244,62 @@ class WebApiMixin:
                 "ready": bool(getattr(self, "_work_router", None)),
                 "sessions": sessions,
                 "error": getattr(self, "_work_error", ""),
+            }
+        )
+
+    @staticmethod
+    def _pause_reason(service, state):
+        from .session_store import connection_key
+
+        cfg = service.plugin.cfg
+        if state.get("connection") != connection_key(cfg):
+            return "context_changed"
+        if not cfg.get("enabled", True) or not cfg.get("work_mode_enabled", True):
+            return "disabled"
+        if not service._delivery_permitted(state):
+            return "access_revoked"
+        return ""
+
+    async def api_command_reference(self, **kwargs):
+        from .actions import MAIN_COMMANDS
+
+        return self._ok(
+            {
+                "commands": [
+                    {"command": cmd, "description": desc} for cmd, desc in MAIN_COMMANDS
+                ]
+            }
+        )
+
+    async def api_action_list_workspaces(self, **kwargs):
+        from .multica_client import MulticaClient
+
+        result = await MulticaClient(self.cfg).list_workspaces()
+        if not result["ok"]:
+            return self._err(result["message"])
+        return self._ok(
+            {
+                "workspaces": [
+                    {k: item.get(k, "") for k in ("id", "name", "slug")}
+                    for item in result["workspaces"]
+                    if isinstance(item, dict)
+                ]
+            }
+        )
+
+    async def api_action_list_projects(self, **kwargs):
+        from .multica_client import MulticaClient
+
+        result = await MulticaClient(self.cfg).list_projects()
+        if not result["ok"]:
+            return self._err(result["message"])
+        return self._ok(
+            {
+                "projects": [
+                    {k: item.get(k, "") for k in ("id", "title", "workspace_id")}
+                    for item in result["projects"]
+                    if isinstance(item, dict)
+                ]
             }
         )
 

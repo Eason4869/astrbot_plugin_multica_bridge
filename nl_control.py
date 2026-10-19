@@ -146,7 +146,13 @@ def contains_keyword(text: str, keyword: str = "multica") -> bool:
     kw = (keyword or "").strip()
     if not kw:
         return False
-    return kw.casefold() in (text or "").casefold()
+    return bool(
+        re.search(
+            r"(?<![a-zA-Z0-9_])" + re.escape(kw) + r"(?![a-zA-Z0-9_])",
+            text or "",
+            re.IGNORECASE,
+        )
+    )
 
 
 def strip_keyword(text: str, keyword: str = "multica") -> str:
@@ -154,7 +160,15 @@ def strip_keyword(text: str, keyword: str = "multica") -> str:
     kw = (keyword or "multica").strip()
     t = text or ""
     if kw:
-        t = re.sub(re.escape(kw), " ", t, flags=re.IGNORECASE)
+        t = re.sub(
+            r"^(\s*(?:(?:请|帮我|用|使用|看看|列出|查看|查询)[\s，,：:]*)*)"
+            + re.escape(kw)
+            + r"(?![a-zA-Z0-9_])",
+            r"\1 ",
+            t,
+            count=1,
+            flags=re.IGNORECASE,
+        )
     t = re.sub(r"^[\s、,，。.！!？?：:；;~～\-—]+", "", t)
     t = re.sub(r"[\s、,，。.！!？?：:；;~～]+$", "", t)
     t = t.strip()
@@ -241,14 +255,29 @@ def _extract_issue_fields(body: str) -> dict[str, str]:
     residual = residual.strip()
     # 中文/英文字段口语
     patterns = [
-        (r"(?:描述|说明|desc|description)\s*[:：]?\s*(.+?)(?=\s+(?:优先级|状态|标签|截止|指派|assignee|priority|status|labels|due)\b|$)", "desc"),
-        (r"(?:优先级|priority)\s*[:：]?\s*(紧急|高|中|低|普通|urgent|high|medium|normal|low|p[0-3])", "priority"),
-        (r"(?:状态|status)\s*[:：]?\s*(in[_\s-]?review|in[_\s-]?progress|backlog|todo|done|cancelled|canceled|评审|待评审|进行中|处理中|待整理|待办|已完成|完成|已取消|取消)", "status"),
+        (
+            r"(?:描述|说明|desc|description)\s*[:：]?\s*(.+?)(?=\s+(?:优先级|状态|标签|截止|指派|assignee|priority|status|labels|due)\b|$)",
+            "desc",
+        ),
+        (
+            r"(?:优先级|priority)\s*[:：]?\s*(紧急|高|中|低|普通|urgent|high|medium|normal|low|p[0-3])",
+            "priority",
+        ),
+        (
+            r"(?:状态|status)\s*[:：]?\s*(in[_\s-]?review|in[_\s-]?progress|backlog|todo|done|cancelled|canceled|评审|待评审|进行中|处理中|待整理|待办|已完成|完成|已取消|取消)",
+            "status",
+        ),
         (r"(?:标签|labels?)\s*[:：]?\s*([^，,。.]+(?:[，,][^，,。.]+)*)", "labels"),
-        (r"(?:截止|到期|due(?:\s*date)?)\s*[:：]?\s*(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?)", "due"),
+        (
+            r"(?:截止|到期|due(?:\s*date)?)\s*[:：]?\s*(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?)",
+            "due",
+        ),
         (r"(?:指派给|指派|assignee)\s*[:：]?\s*(\S+)", "assignee"),
         (r"(?:项目|project)\s*[:：]?\s*(\S+)", "project"),
-        (r"(?:标题|title)\s*[:：]?\s*(.+?)(?=\s+(?:描述|优先级|状态|标签|截止|指派|desc|priority|status|labels|due|assignee)\b|$)", "title"),
+        (
+            r"(?:标题|title)\s*[:：]?\s*(.+?)(?=\s+(?:描述|优先级|状态|标签|截止|指派|desc|priority|status|labels|due|assignee)\b|$)",
+            "title",
+        ),
     ]
 
     consumed: list[str] = []
@@ -343,9 +372,27 @@ def _looks_like_control_query(remainder: str) -> bool:
     if _HELP_HINTS.search(r) or _STATUS_HINTS.search(r) or _INBOX_HINTS.search(r):
         return True
     control_words = (
-        "建", "创建", "新建", "切换", "选择", "列出", "查看", "看看",
-        "收件箱", "inbox", "issue", "议题", "任务", "工作区", "项目",
-        "workspace", "project", "帮助", "状态", "help", "status",
+        "建",
+        "创建",
+        "新建",
+        "切换",
+        "选择",
+        "列出",
+        "查看",
+        "看看",
+        "收件箱",
+        "inbox",
+        "issue",
+        "议题",
+        "任务",
+        "工作区",
+        "项目",
+        "workspace",
+        "project",
+        "帮助",
+        "状态",
+        "help",
+        "status",
     )
     low = r.casefold()
     return any(w.casefold() in low for w in control_words)
@@ -409,12 +456,16 @@ def parse_nl_intent(text: str, keyword: str = "multica") -> NLIntent | None:
     # 2) 口语：建 issue / 切换项目 / 收件箱 等
     m = _ISSUE_NL.match(body)
     if m:
-        args = _issue_fields_to_args(_extract_issue_fields((m.group("body") or "").strip()))
+        args = _issue_fields_to_args(
+            _extract_issue_fields((m.group("body") or "").strip())
+        )
         return NLIntent("issue_create", args)
 
     m = _WS_CREATE.match(body)
     if m:
-        args = _project_or_ws_create_args((m.group("body") or "").strip(), ("--slug", "--desc", "--context"))
+        args = _project_or_ws_create_args(
+            (m.group("body") or "").strip(), ("--slug", "--desc", "--context")
+        )
         return NLIntent("workspace_create", args)
 
     m = _WS_SELECT.match(body)
@@ -423,7 +474,9 @@ def parse_nl_intent(text: str, keyword: str = "multica") -> NLIntent | None:
         # 「切换到工作区」后面可能再跟「列表」等误匹配，交给 select 空参提示
         return NLIntent("workspace_select", target)
 
-    if _WS_LIST.match(body) or re.search(r"工作区\s*(列表|清单)|列出\s*工作区|有哪些\s*工作区", body):
+    if _WS_LIST.match(body) or re.search(
+        r"工作区\s*(列表|清单)|列出\s*工作区|有哪些\s*工作区", body
+    ):
         return NLIntent("workspace_list")
 
     m = _PROJ_CREATE.match(body)
@@ -436,7 +489,9 @@ def parse_nl_intent(text: str, keyword: str = "multica") -> NLIntent | None:
         target = (m.group("target") or "").strip(" ，,、：:")
         return NLIntent("project_select", target)
 
-    if _PROJ_LIST.match(body) or re.search(r"项目\s*(列表|清单)|列出\s*项目|有哪些\s*项目", body):
+    if _PROJ_LIST.match(body) or re.search(
+        r"项目\s*(列表|清单)|列出\s*项目|有哪些\s*项目", body
+    ):
         return NLIntent("project_list")
 
     if _INBOX_HINTS.search(body):
@@ -464,7 +519,9 @@ def _project_or_ws_create_args(body: str, flags: tuple[str, ...]) -> str:
     # 口语：名称 desc xxx / 描述 xxx
     name = body
     extra: list[str] = []
-    desc_m = re.search(r"(?:描述|说明|desc|description)\s*[:：]?\s*(.+)$", body, re.IGNORECASE)
+    desc_m = re.search(
+        r"(?:描述|说明|desc|description)\s*[:：]?\s*(.+)$", body, re.IGNORECASE
+    )
     if desc_m:
         extra.append(f"--desc {desc_m.group(1).strip()}")
         name = body[: desc_m.start()].strip(" ，,、：:")
@@ -475,7 +532,9 @@ def _project_or_ws_create_args(body: str, flags: tuple[str, ...]) -> str:
     ctx_m = re.search(r"(?:背景|context)\s*[:：]?\s*(.+)$", body, re.IGNORECASE)
     if ctx_m and "--context" in flags:
         extra.append(f"--context {ctx_m.group(1).strip()}")
-        name = re.sub(r"(?:背景|context)\s*[:：]?\s*.+$", "", name, flags=re.IGNORECASE).strip(" ，,、：:")
+        name = re.sub(
+            r"(?:背景|context)\s*[:：]?\s*.+$", "", name, flags=re.IGNORECASE
+        ).strip(" ，,、：:")
     parts = [name, *extra]
     return " ".join(p for p in parts if p).strip()
 
@@ -487,12 +546,7 @@ def _normalize_inbox_args(raw: str) -> str:
     status = ""
     for tok in text.split():
         low = tok.lower()
-        if (
-            "open" in low
-            or "未完成" in tok
-            or "进行中" in tok
-            or "未结" in tok
-        ):
+        if "open" in low or "未完成" in tok or "进行中" in tok or "未结" in tok:
             status = "open"
         elif (
             "done" in low
@@ -602,3 +656,13 @@ def extract_llm_reply_text(resp: Any) -> str:
     if isinstance(resp, str):
         return resp
     return str(resp or "")
+
+
+# Keep the existing rule/helper API available to integrations during migration.
+from .structured_nl import (  # noqa: E402,F401
+    ParseResult,
+    parse_control_request,
+    parse_work_enter,
+    request_from_llm_payload,
+    validate_action_fields,
+)

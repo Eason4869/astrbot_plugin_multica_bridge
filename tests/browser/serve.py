@@ -40,10 +40,7 @@ async def start():
         "token": "ui-fixture-old-secret",
         "workspace_id": "00000000-0000-0000-0000-000000000001",
         "project_id": "",
-        "group_chat_mode": "blacklist",
-        "group_chat_list": [],
-        "private_chat_mode": "blacklist",
-        "private_chat_list": [],
+        "multica_whitelist": ["用户QQ号", "demo-private-user"],
         "nl_enabled": True,
         "nl_llm_enabled": True,
         "nl_keyword": "multica",
@@ -62,8 +59,8 @@ async def start():
     plugin._work_router = object()
     plugin._work_mode.store.records = {}
     for key, kind, chat, agent in [
-        ("fixture-group", "group", "123456789", "项目开发助手"),
-        ("fixture-private", "private", "246801357", "资料整理助手"),
+        ("fixture-group", "group", "demo-group", "项目开发助手"),
+        ("fixture-private", "private", "demo-private-user", "资料整理助手"),
     ]:
         plugin._work_mode.store.update(
             key,
@@ -72,6 +69,8 @@ async def start():
             chat_type=kind,
             chat_id=chat,
             agent_name=agent,
+            owner_id="用户QQ号" if kind == "group" else chat,
+            access_origin="qq:GroupMessage:" + chat,
             session_id="fixture-chat",
             workspace_id=original["workspace_id"],
             connection=connection_key(plugin.cfg),
@@ -99,6 +98,9 @@ async def start():
         action = request.match_info["action"]
         methods = {
             "config": plugin.api_config,
+            "command_reference": plugin.api_command_reference,
+            "actions/list_workspaces": plugin.api_action_list_workspaces,
+            "actions/list_projects": plugin.api_action_list_projects,
             "work_status": plugin.api_work_status,
             "actions/save_config": plugin.api_action_save_config,
             "actions/test_connection": plugin.api_action_test_connection,
@@ -122,6 +124,16 @@ async def start():
                         "id": original["workspace_id"],
                         "name": "本地验证工作区",
                         "slug": "validation",
+                    }
+                ]
+            )
+        if tail == "projects":
+            return web.json_response(
+                [
+                    {
+                        "id": "project-one",
+                        "title": "项目一",
+                        "workspace_id": original["workspace_id"],
                     }
                 ]
             )

@@ -24,22 +24,9 @@
       "clearToken": "清除 Token",
       "clearConfirm": "确定清除 Token？这会中断 Multica 连接。",
       "workspaceId": "工作区 ID",
-      "workspaceIdHint": "留空自动获取，通常无需填写。",
+      "workspaceIdHint": "仅有一个工作区时可留空；多个工作区请读取列表选择。",
       "projectId": "项目 ID",
       "projectIdHint": "指定后新建 Issue 默认进入该项目"
-    },
-    "filter": {
-      "title": "会话访问规则",
-      "desc": "控制插件在哪些群聊 / 私聊中生效",
-      "groupMode": "群聊过滤模式",
-      "groupModeHint": "黑名单：排除指定群 · 白名单：仅指定群可用 · 关闭：不限制",
-      "groupListHint": "群号，每行一个。",
-      "privateMode": "私聊过滤模式",
-      "privateModeHint": "黑名单：排除指定用户 · 白名单：仅指定用户可用 · 关闭：不限制",
-      "privateListHint": "QQ 号，每行一个。",
-      "blacklist": "黑名单",
-      "whitelist": "白名单",
-      "disabled": "不限制"
     },
     "work": {
       "title": "工作模式",
@@ -48,10 +35,10 @@
       "enabledHint": "关闭后暂停转发，已开启的聊天仍可用 /multica exit 退出。",
       "agent": "默认智能体",
       "agentHint": "留空时自动选择唯一智能体；多个智能体可在聊天中按编号选择。",
-      "note": "回复始终带有【来自 Multica｜工作模式】前缀。同一群内成员共用对话，群外消息不受影响；首版支持文字。",
+      "note": "群聊进入工作模式后，仅开启者的文字转发给 Multica；其他群友继续使用 AstrBot。工作回复在群内可见。",
       "exit": "退出模式，恢复普通机器人",
       "new": "新建对话，保留旧对话",
-      "choose": "选择智能体并开启新对话",
+      "choose": "查看或切换智能体",
       "stop": "停止执行，保持工作模式"
     },
     "nl": {
@@ -63,10 +50,10 @@
       "keywordHint": "消息中包含该词（不区分大小写）才会触发意图识别，默认 multica",
       "llm": "规则失败时使用 LLM",
       "llmHint": "优先本地规则解析；复杂句子可选用 AstrBot 当前 LLM 回退",
-      "note": "示例：multica 建个issue：修复登录，优先级高 · multica 收件箱 10 open · multica 切换到项目 前端重构"
+      "note": "示例：进入multica模式 · 切换为multica工作 · multica 建个issue：修复登录 · multica 收件箱 5 open。退出请用 /multica exit。"
     },
     "perm": {
-      "note": "💡 权限提醒：可在 AstrBot「指令管理」中把每条指令分别设为「仅管理员」，例如收紧 workspace create / project create 给管理员，而把 inbox 放开给成员。"
+      "note": "指令默认面向所有人，使用资格由放行名单决定。若历史指令设为仅管理员，可在 AstrBot「指令管理」改为所有人。"
     },
     "cmd": {
       "title": "指令说明",
@@ -121,7 +108,7 @@
       "routingHint": "工作会话由 Multica 回复",
       "activeWindows": "工作中的聊天",
       "windows": "个窗口",
-      "scopeHint": "其他群与私聊保持普通模式",
+      "scopeHint": "仅开启者转发，其他群友正常聊天",
       "workSubtitle": "每个群、每个私聊，各自决定何时开始工作。",
       "readAgents": "读取列表",
       "sessionTitle": "当前工作会话",
@@ -139,13 +126,13 @@
       "private": "私聊",
       "filterHint": "黑名单排除指定会话；白名单只允许指定会话；不限制则全部可用。",
       "permissions": "谁能开始工作？",
-      "permissionHint": "在 AstrBot「指令管理」中设置 multica enter 的权限，可限制谁能开启模式和发送工作消息。",
-      "tokenOwnerHint": "工作操作使用当前 Token 所属账号的权限。多人共用时，请只开放给可信会话。",
+      "permissionHint": "指令默认面向所有人，使用资格由放行名单决定。若历史指令设为仅管理员，可在 AstrBot「指令管理」改为所有人。",
+      "tokenOwnerHint": "操作使用当前 Token 的权限，仅向可信用户或会话开放。",
       "commandHint": "工作模式不需要重复指令；下面的命令用于控制会话。",
       "advanced": "普通模式中的自然语言控制与管理命令",
-      "nlHint": "仅在普通模式识别建 Issue、切换项目等管理操作。",
+      "nlHint": "普通模式可识别进入工作模式、查询收件箱和创建 Issue；Issue 写入前需本人确认。",
       "nlModelHint": "普通模式可用 AstrBot 模型识别管理意图。工作模式始终直接连接 Multica。",
-      "managementHint": "原有 issue、inbox、workspace、project 命令继续可用。发送 /multica help 查看说明。",
+      "managementHint": "高级入口：/multica inbox、/multica issue create。旧 workspace/project 命令保留兼容，建议在设置页管理全局默认值。",
       "footer": "连接配置保留，工作状态按聊天保存。",
       "loaded": "配置已读取",
       "saving": "正在保存",
@@ -168,6 +155,34 @@
       "openInAstrBot": "请从 AstrBot 的插件设置页打开此工作台。",
       "waitingBridge": "等待 AstrBot 连接",
       "loadError": "读取失败，请重新打开"
+    },
+    "access": {
+      "title": "Multica 放行用户名单",
+      "badge": "UID / UMO",
+      "intro": "群聊与私聊统一授权。每行一项，可混填；匹配任意一项即可使用。留空时无人可用。",
+      "label": "放行的 UID 或完整 UMO",
+      "uid": "该用户可在所有群聊和私聊使用。",
+      "private": "仅允许该用户通过 机器人ID 私聊使用，不放行群聊。",
+      "group": "允许 机器人ID 所在的该群所有成员使用指令。",
+      "scope": "群聊进入工作模式后，仅开启者的文字转发给 Multica；其他群友继续使用 AstrBot。工作回复在群内可见。",
+      "denial": "未获放行时回复：您没有使用Multica的权限，请联系管理员获取使用资格",
+      "workspaces": "读取工作区",
+      "projects": "读取项目",
+      "manage": "在 Multica 管理",
+      "context": "工作区和项目为全局默认值。变更后旧绑定暂停，请在受影响聊天发送 /multica new；切换工作区会清空旧项目。",
+      "optionsLoaded": "列表已更新，请在输入框中选择",
+      "owner": "开启者",
+      "pause_context_changed": "连接或项目已变化，请新建对话",
+      "pause_disabled": "工作转发开关已关闭",
+      "pause_access_revoked": "开启者不在放行名单中"
+    },
+    "picker": {
+      "auto": "自动选择智能体",
+      "autoHint": "进入时自动选择唯一可用智能体",
+      "loading": "正在读取智能体…",
+      "empty": "没有匹配的智能体",
+      "search": "搜索名称或 ID",
+      "toggle": "展开智能体列表"
     }
   }
 }

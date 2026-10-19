@@ -86,7 +86,10 @@ class Main(WorkModeMixin, WebApiMixin, Star):
                 load_plugin_config(data_dir),
             )
         except Exception as e:
-            self.log.warning("[multica_bridge] Config unreadable (%s); disk file preserved", type(e).__name__)
+            self.log.warning(
+                "[multica_bridge] Config unreadable (%s); disk file preserved",
+                type(e).__name__,
+            )
             from .config import CONFIG_DEFAULTS
 
             self.cfg = dict(CONFIG_DEFAULTS)
@@ -231,58 +234,9 @@ class Main(WorkModeMixin, WebApiMixin, Star):
 
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def on_multica_natural_language(self, event: AstrMessageEvent) -> None:
-        """监听普通消息中的 Multica 自然语言控制请求。"""
-        try:
-            text = (event.message_str or "").strip()
-        except Exception:
-            return
-        if not text:
-            return
-        # 斜杠指令由指令组处理，避免重复执行
-        if text.startswith("/"):
-            return
+        from .natural_language import handle_natural_language
 
-        cfg = getattr(self, "cfg", None) or {}
-        keyword = str(cfg.get("nl_keyword") or "multica").strip() or "multica"
-        try:
-            from .nl_control import contains_keyword
-
-            if not contains_keyword(text, keyword):
-                return
-        except Exception:
-            return
-
-        if not cfg.get("nl_enabled", True):
-            return
-        if not self._chat_allowed(event):
-            # 与历史行为一致：被过滤时不终止，交回 LLM / 其它插件
-            return
-
-        from .nl_control import parse_nl_intent
-
-        intent = parse_nl_intent(text, keyword)
-        if intent is None and cfg.get("nl_llm_enabled", True):
-            intent = await self._llm_parse_intent(event, text, keyword)
-
-        if intent is None or not intent.valid:
-            # 疑似控制请求但未解析出意图时给用法提示；
-            # 纯提问（如「multica是什么」）不拦截，交回 LLM。
-            if self._looks_like_nl_control(text, keyword):
-                await self._reply(event, self._nl_usage_text(keyword))
-                event.stop_event()
-            return
-
-        if not cfg.get("enabled", True):
-            await self._reply(
-                event,
-                "⛔ Multica 桥接当前已停用。请在 AstrBot WebUI → 插件 → "
-                "Multica桥接 → 设置 中启用后再试。",
-            )
-            event.stop_event()
-            return
-
-        await self._execute_nl_intent(event, intent)
-        event.stop_event()
+        await handle_natural_language(self, event)
 
     def _looks_like_nl_control(self, text: str, keyword: str) -> bool:
         try:
@@ -299,7 +253,7 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             f"识别到关键词「{kw}」，但没解析出明确操作。\n"
             f"可直接说：\n"
             f"• {kw} 建个issue：修复登录，优先级高\n"
-            f"• {kw} 切换到项目 前端重构\n"
+            f"• 进入{kw}模式 / 切换为{kw}工作\n"
             f"• {kw} 收件箱 10 open\n"
             f"• {kw} status / {kw} 帮助\n"
             f"也可使用指令：/multica help"
@@ -308,94 +262,22 @@ class Main(WorkModeMixin, WebApiMixin, Star):
     async def _llm_parse_intent(
         self, event: AstrMessageEvent, text: str, keyword: str
     ) -> NLIntent | None:
-        """规则失败时，调用 AstrBot 当前 LLM Provider 做意图回退解析。"""
-        try:
-            from .nl_control import (
-                LLM_SYSTEM_PROMPT,
-                build_llm_prompt,
-                extract_json_object,
-                extract_llm_reply_text,
-                intent_from_llm_payload,
-            )
+        from .natural_language import parse_with_provider
 
-            context = getattr(self, "context", None)
-            if context is None:
-                return None
+        return await parse_with_provider(self, event, text, keyword)
 
-            umo = None
-            try:
-                umo = getattr(event, "unified_msg_origin", None)
-            except Exception:
-                umo = None
-
-            prov = None
-            getter = getattr(context, "get_using_provider_async", None)
-            if callable(getter):
-                try:
-                    prov = await getter(umo)
-                except TypeError:
-                    prov = await getter()
-            if prov is None:
-                getter_sync = getattr(context, "get_using_provider", None)
-                if callable(getter_sync):
-                    prov = getter_sync(umo)
-            if prov is None:
-                return None
-
-            prompt = build_llm_prompt(text, keyword)
-            text_chat = getattr(prov, "text_chat", None)
-            if not callable(text_chat):
-                return None
-
-            try:
-                resp = await text_chat(prompt=prompt, system_prompt=LLM_SYSTEM_PROMPT)
-            except TypeError:
-                # 旧版 Provider 可能不接受 system_prompt
-                resp = await text_chat(prompt=prompt)
-
-            reply = extract_llm_reply_text(resp)
-            intent = intent_from_llm_payload(extract_json_object(reply))
-            if intent is not None:
-                self.log.debug(
-                    "[multica_bridge] LLM 解析意图: action=%s args=%s",
-                    intent.action,
-                    intent.args,
-                )
-            return intent
-        except Exception as e:
-            self.log.warning("[multica_bridge] 自然语言 LLM 解析失败: %s", e)
-            return None
-
-    async def _execute_nl_intent(self, event: AstrMessageEvent, intent: NLIntent) -> None:
+    async def _execute_nl_intent(
+        self, event: AstrMessageEvent, intent: NLIntent
+    ) -> None:
         """把自然语言意图分发到既有子指令实现。"""
-        action = intent.action
-        args = intent.args or ""
-        try:
-            if action == "help":
-                await self._cmd_help(event)
-            elif action == "status":
-                await self._cmd_status(event)
-            elif action == "inbox":
-                await self._cmd_inbox(event, args)
-            elif action == "issue_create":
-                await self._cmd_issue_create(event, args)
-            elif action == "workspace_list":
-                await self._cmd_workspace_list(event)
-            elif action == "workspace_select":
-                await self._cmd_workspace_select(event, args)
-            elif action == "workspace_create":
-                await self._cmd_workspace_create(event, args)
-            elif action == "project_list":
-                await self._cmd_project_list(event)
-            elif action == "project_select":
-                await self._cmd_project_select(event, args)
-            elif action == "project_create":
-                await self._cmd_project_create(event, args)
-            else:
-                await self._reply(event, self._nl_usage_text("multica"))
-        except Exception as e:
-            self.log.error("[multica_bridge] 自然语言意图执行失败 (%s): %s", action, e)
-            await self._reply(event, f"❌ 执行自然语言操作失败：{e}")
+        from .actions import ActionRequest, dispatch_action
+
+        await dispatch_action(
+            self,
+            event,
+            ActionRequest(intent.action, {"args": intent.args}, intent.source),
+        )
+        return
 
     # ── 统一入口守卫 ──
 
@@ -407,7 +289,7 @@ class Main(WorkModeMixin, WebApiMixin, Star):
         """统一守卫：启用检查 → 会话过滤 → 执行 → 终止事件传播。
 
         - 插件停用时给出明确提示，并终止事件（不再交给 LLM）。
-        - 会话被黑白名单过滤时不终止事件，交回 LLM 处理（与历史行为一致）。
+        - 未获放行时回复固定提示并终止指令，不调用模型。
         """
         try:
             cfg = getattr(self, "cfg", None) or {}
@@ -421,6 +303,10 @@ class Main(WorkModeMixin, WebApiMixin, Star):
                 return
 
             if not self._chat_allowed(event):
+                from .multica_client import PERMISSION_DENIED
+
+                await self._reply(event, PERMISSION_DENIED)
+                event.stop_event()
                 return
 
             await action()
@@ -430,12 +316,15 @@ class Main(WorkModeMixin, WebApiMixin, Star):
 
     def _chat_allowed(self, event: AstrMessageEvent) -> bool:
         """按黑白名单配置判断当前会话是否允许执行指令。"""
-        from .multica_client import check_chat_allowed
+        from .multica_client import check_chat_allowed, event_access_origins
 
-        chat_type = "group" if self._is_group_chat(event) else "private"
-        chat_id = self._get_chat_id(event)
+        chat_type = "user"
+        chat_id = str(event.get_sender_id() or "")
         cfg = getattr(self, "cfg", None) or {}
-        if chat_id and not check_chat_allowed(cfg, chat_type, chat_id):
+        if not any(
+            check_chat_allowed(cfg, chat_type, chat_id, origin)
+            for origin in event_access_origins(event)
+        ):
             self.log.debug(
                 "[multica_bridge] 会话 %s (%s) 被过滤配置拦截",
                 chat_id,
@@ -515,32 +404,9 @@ class Main(WorkModeMixin, WebApiMixin, Star):
     # ── 子指令实现 ──
 
     async def _cmd_help(self, event: AstrMessageEvent) -> None:
-        help_text = (
-            "Multica 桥接插件命令：\n"
-            "/multica — 显示指令树（不输子指令时）\n"
-            "/multica help — 显示此帮助\n"
-            "/multica status — 检查连接、当前工作区与项目\n"
-            "/multica issue create <标题> [选项] — 新建 Issue\n"
-            "   选项：--desc 描述 --priority 紧急|高|中|低\n"
-            "         --status todo|in_progress|in_review|backlog|done\n"
-            "         --assignee <id> --project <id> --due YYYY-MM-DD\n"
-            "         --labels 标签1,标签2\n"
-            "/multica workspace list — 列出可访问的工作区\n"
-            "/multica workspace select <id|slug> — 切换当前工作区（持久化）\n"
-            "/multica workspace create <名称> [--slug slug] [--desc 描述] [--context 背景]\n"
-            "/multica project list — 列出当前工作区的项目\n"
-            "/multica project select <id> — 切换当前项目（持久化）\n"
-            "/multica project create <标题> [--desc 描述] — 创建项目\n"
-            "/multica inbox [数量] [open|done] — 查看收件箱（最近 Issue 及进展）\n"
-            "\n"
-            "自然语言控制（消息含关键词 multica 即可，无需斜杠）：\n"
-            "• multica 建个issue：修复登录，优先级高\n"
-            "• multica 切换到项目 前端重构\n"
-            "• multica 收件箱 10 open\n"
-            "• multica status / multica 帮助\n"
-            "规则解析优先；可在设置中关闭或启用 LLM 回退。"
-        )
-        await self._reply(event, help_text)
+        from .actions import help_text
+
+        await self._reply(event, help_text())
 
     async def _cmd_status(self, event: AstrMessageEvent) -> None:
         from .multica_client import MulticaClient, mask_secret
@@ -616,8 +482,7 @@ class Main(WorkModeMixin, WebApiMixin, Star):
         if status and status not in _VALID_STATUS:
             await self._reply(
                 event,
-                f"❌ 无效的 --status：{status}\n"
-                f"可选：{'、'.join(_VALID_STATUS)}",
+                f"❌ 无效的 --status：{status}\n可选：{'、'.join(_VALID_STATUS)}",
             )
             return
 
@@ -680,8 +545,12 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             )
             return
 
-        client = MulticaClient(self.cfg)
+        snapshot = dict(self.cfg)
+        client = MulticaClient(snapshot)
         result = await client.list_workspaces()
+        if self.cfg != snapshot:
+            await self._reply(event, "配置已变化，请重新选择工作区。")
+            return
         if not result["ok"]:
             await self._reply(event, f"❌ 获取工作区失败：{result['message']}")
             return
@@ -700,12 +569,18 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             await self._reply(event, "❌ 目标工作区缺少 id，无法切换")
             return
 
-        self.cfg["workspace_id"] = wsid
-        self._save_cfg()
+        previous = dict(self.cfg)
+        self.cfg = dict(previous, workspace_id=wsid, project_id="")
+        try:
+            self._save_cfg()
+        except Exception:
+            self.cfg = previous
+            raise
+        if getattr(self, "_work_mode", None):
+            self._work_mode.refresh()
         await self._reply(
             event,
-            f"✅ 已切换到工作区 {name}（{wsid}）\n"
-            "该选择已持久化，重启后仍然生效。",
+            f"✅ 已切换到工作区 {name}（{wsid}）\n该选择已持久化，重启后仍然生效。",
         )
 
     async def _cmd_workspace_create(self, event: AstrMessageEvent, args: str) -> None:
@@ -791,8 +666,12 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             )
             return
 
-        client = MulticaClient(self.cfg)
+        snapshot = dict(self.cfg)
+        client = MulticaClient(snapshot)
         result = await client.list_projects()
+        if self.cfg != snapshot:
+            await self._reply(event, "配置已变化，请重新选择项目。")
+            return
         if not result["ok"]:
             await self._reply(event, f"❌ 获取项目列表失败：{result['message']}")
             return
@@ -805,18 +684,29 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             )
             return
 
+        workspace = str(client._workspace_id or snapshot.get("workspace_id") or "")
+        if proj.get("workspace_id") and str(proj["workspace_id"]) != workspace:
+            await self._reply(event, "项目不属于当前工作区，请重新选择项目。")
+            return
+
         pid = str(proj.get("id") or "").strip()
         title = proj.get("title") or "（未命名）"
         if not pid:
             await self._reply(event, "❌ 目标项目缺少 id，无法切换")
             return
 
-        self.cfg["project_id"] = pid
-        self._save_cfg()
+        previous = dict(self.cfg)
+        self.cfg = dict(previous, project_id=pid)
+        try:
+            self._save_cfg()
+        except Exception:
+            self.cfg = previous
+            raise
+        if getattr(self, "_work_mode", None):
+            self._work_mode.refresh()
         await self._reply(
             event,
-            f"✅ 已切换到项目 {title}（{pid}）\n"
-            "该选择已持久化，重启后仍然生效。",
+            f"✅ 已切换到项目 {title}（{pid}）\n该选择已持久化，重启后仍然生效。",
         )
 
     async def _cmd_project_create(self, event: AstrMessageEvent, args: str) -> None:
@@ -879,13 +769,13 @@ class Main(WorkModeMixin, WebApiMixin, Star):
         issues = result.get("issues") or []
         if status_filter == "open":
             issues = [
-                i for i in issues
+                i
+                for i in issues
                 if (i.get("status") or "") not in ("done", "cancelled")
             ]
         elif status_filter == "done":
             issues = [
-                i for i in issues
-                if (i.get("status") or "") in ("done", "cancelled")
+                i for i in issues if (i.get("status") or "") in ("done", "cancelled")
             ]
 
         issues.sort(key=lambda i: i.get("updated_at") or "", reverse=True)
@@ -902,13 +792,11 @@ class Main(WorkModeMixin, WebApiMixin, Star):
 
         # 只为当前展示的 Issue 解析指派人名称，避免多余请求
         assignee_ids = {
-            str(i.get("assignee_id"))
-            for i in issues
-            if i.get("assignee_id")
+            str(i.get("assignee_id")) for i in issues if i.get("assignee_id")
         }
         names = await client.resolve_assignee_names(assignee_ids)
 
-        head = f"📥 Multica 收件箱（最近 {len(issues)} 条"
+        head = f"📥 Multica 收件箱（最新创建 50 条内筛选，展示 {len(issues)} 条"
         if status_filter == "open":
             head += " · 未完成"
         elif status_filter == "done":
@@ -944,11 +832,25 @@ class Main(WorkModeMixin, WebApiMixin, Star):
     async def _reply(self, event: AstrMessageEvent, text: str) -> None:
         """向消息来源回复。"""
         from .reply_worker import PREFIX
+
         service = getattr(self, "_work_mode", None)
         key = getattr(event, "_multica_key", None)
-        if key is not None and service and (service.closed or service.store.get(key)["generation"] != event._multica_generation):
+        if (
+            key is not None
+            and service
+            and (
+                service.closed
+                or service.store.get(key)["generation"] != event._multica_generation
+            )
+        ):
             return
-        if getattr(event, "_multica_owned", False) and not text.startswith(PREFIX):
+        from .multica_client import PERMISSION_DENIED
+
+        if (
+            getattr(event, "_multica_owned", False)
+            and not text.startswith(PREFIX)
+            and text != PERMISSION_DENIED
+        ):
             text = PREFIX + text
         try:
             await event.send(MessageChain([Plain(text)]))

@@ -88,6 +88,13 @@ class ChatClient(MulticaClient):
         self, agent_id: str, title: str, project_id: str = ""
     ) -> dict:
         await self.resolve_workspace()
+        try:
+            project_id = await self.validate_project(project_id)
+        except (ValueError, RuntimeError) as exc:
+            raise MulticaError(str(exc)) from exc
+        guard = getattr(self, "write_guard", None)
+        if guard:
+            guard()
         payload = {"agent_id": agent_id, "title": title}
         if project_id:
             payload["project_id"] = project_id

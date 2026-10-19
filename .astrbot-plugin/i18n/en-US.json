@@ -24,22 +24,9 @@
       "clearToken": "Clear Token",
       "clearConfirm": "Clear the saved Token? This will disconnect Multica.",
       "workspaceId": "Workspace ID",
-      "workspaceIdHint": "Leave empty to auto-resolve; usually no input is needed.",
+      "workspaceIdHint": "Leave blank only when one workspace is available; otherwise load and select one.",
       "projectId": "Project ID",
       "projectIdHint": "New issues are created in this project by default"
-    },
-    "filter": {
-      "title": "Chat access rules",
-      "desc": "Control which group / private chats the plugin responds in",
-      "groupMode": "Group chat mode",
-      "groupModeHint": "Blacklist: exclude listed groups · Whitelist: only listed groups · Off: no restriction",
-      "groupListHint": "Group IDs, one per line.",
-      "privateMode": "Private chat mode",
-      "privateModeHint": "Blacklist: exclude listed users · Whitelist: only listed users · Off: no restriction",
-      "privateListHint": "QQ IDs, one per line.",
-      "blacklist": "Blacklist",
-      "whitelist": "Whitelist",
-      "disabled": "Unrestricted"
     },
     "work": {
       "title": "Work mode",
@@ -48,10 +35,10 @@
       "enabledHint": "Disabling pauses forwarding; /multica exit remains available.",
       "agent": "Default agent",
       "agentHint": "A single agent is selected automatically. Choose by number in chat if there are several.",
-      "note": "Replies always include a Multica work-mode prefix. Members of one group share a Chat; other windows are unaffected. Text only in this release.",
+      "note": "Only the starter’s text is forwarded in work mode. Other members keep using AstrBot. Work replies remain visible to the group.",
       "exit": "Restore the ordinary bot; remote tasks continue",
       "new": "Start a new Chat and keep the old one",
-      "choose": "Choose an agent and start a new Chat",
+      "choose": "List or switch agents",
       "stop": "Stop execution and stay in work mode"
     },
     "nl": {
@@ -63,10 +50,10 @@
       "keywordHint": "Intent recognition runs only when the message contains this keyword (case-insensitive). Default: multica",
       "llm": "Use LLM when rules fail",
       "llmHint": "Local rules run first; complex sentences can fall back to the current AstrBot LLM",
-      "note": "Examples: multica create issue: fix login, priority high · multica inbox 10 open · multica switch project frontend"
+      "note": "Enter work mode naturally, query the inbox, or draft an Issue. Exit with /multica exit; ordinary work text is forwarded directly."
     },
     "perm": {
-      "note": "💡 Tip: in AstrBot's Command Management you can set each command to \"admin only\" individually — e.g. restrict workspace create / project create to admins while leaving inbox open to members."
+      "note": "Commands are available to everyone by default; the access list controls eligibility. Remove any old admin-only override in AstrBot Command Management if needed."
     },
     "cmd": {
       "title": "Commands",
@@ -121,7 +108,7 @@
       "routingHint": "Multica replies to work conversations",
       "activeWindows": "Working conversations",
       "windows": "windows",
-      "scopeHint": "Other groups and private chats stay in ordinary mode",
+      "scopeHint": "Starter-only forwarding; ordinary chat for everyone else",
       "workSubtitle": "Each group and private chat chooses when to start working.",
       "readAgents": "Load agents",
       "sessionTitle": "Current work conversations",
@@ -139,13 +126,13 @@
       "private": "Private chat",
       "filterHint": "Blocklist excludes listed chats. Allowlist permits only listed chats. Unrestricted permits all.",
       "permissions": "Who can start work?",
-      "permissionHint": "Set permissions for multica enter in AstrBot Command Management to control who can enter and send work messages.",
-      "tokenOwnerHint": "Work runs with the configured Token owner’s permissions. Only enable shared access for trusted chats.",
+      "permissionHint": "Commands are available to everyone by default; the access list controls eligibility. Remove any old admin-only override in AstrBot Command Management if needed.",
+      "tokenOwnerHint": "Operations use the configured Token’s permissions. Grant access only to trusted users or chats.",
       "commandHint": "No repeated command is needed in work mode. Use these commands to control the conversation.",
       "advanced": "Natural-language controls and management in ordinary mode",
-      "nlHint": "In ordinary mode, recognize management actions such as creating an Issue or switching projects.",
+      "nlHint": "In ordinary mode, enter work mode, query the inbox, or draft an Issue. Issue writes require the author’s confirmation.",
       "nlModelHint": "Ordinary mode may use the AstrBot model to parse management requests. Work mode always talks directly to Multica.",
-      "managementHint": "Existing issue, inbox, workspace and project commands remain available. Send /multica help for details.",
+      "managementHint": "Advanced: /multica inbox and /multica issue create. Legacy workspace/project commands remain compatible; manage global defaults in Settings.",
       "footer": "Connection retained. Work state saved per conversation.",
       "loaded": "Configuration loaded",
       "saving": "Saving changes",
@@ -168,6 +155,34 @@
       "openInAstrBot": "Open this workspace from the AstrBot plugin settings.",
       "waitingBridge": "Waiting for AstrBot",
       "loadError": "Load failed. Reopen this page."
+    },
+    "access": {
+      "title": "Multica access list",
+      "badge": "UID / UMO",
+      "intro": "One UID or full UMO per line. Formats can be mixed; any match grants access. An empty list denies everyone.",
+      "label": "Allowed UIDs or full UMOs",
+      "uid": "This user can use Multica in all group and private chats.",
+      "private": "Only this user’s private chat through 机器人ID is allowed. Group chats are excluded.",
+      "group": "All members of this 机器人ID group can use Multica commands.",
+      "scope": "Only the starter’s text is forwarded in work mode. Other members keep using AstrBot. Work replies remain visible to the group.",
+      "denial": "Users without access receive: 您没有使用Multica的权限，请联系管理员获取使用资格",
+      "workspaces": "Load workspaces",
+      "projects": "Load projects",
+      "manage": "Manage in Multica",
+      "context": "Workspace and project are global defaults. Changes pause old bindings; send /multica new in affected chats. Changing workspace clears the old project.",
+      "optionsLoaded": "Options loaded; choose an entry in the input",
+      "owner": "Starter",
+      "pause_context_changed": "Context changed; start a new Chat",
+      "pause_disabled": "Work forwarding is disabled",
+      "pause_access_revoked": "Starter no longer has access"
+    },
+    "picker": {
+      "auto": "Choose an agent automatically",
+      "autoHint": "Select the only available agent when entering",
+      "loading": "Loading agents…",
+      "empty": "No matching agents",
+      "search": "Search name or ID",
+      "toggle": "Open agent list"
     }
   }
 }

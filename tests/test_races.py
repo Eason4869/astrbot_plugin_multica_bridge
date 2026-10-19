@@ -4,6 +4,76 @@ import pytest
 from test_work_mode import Event, setup_service
 
 
+def test_stop_invalidates_local_queue_without_waiting_for_history(tmp_path):
+    async def run():
+        service, client, _ = setup_service(tmp_path)
+        started, proceed = asyncio.Event(), asyncio.Event()
+        tasks = []
+        try:
+            await service.handle(Event())
+            await service.worker.close()
+
+            async def history(*args):
+                started.set()
+                await proceed.wait()
+                return []
+
+            client.messages = history
+            tasks.append(asyncio.create_task(service.handle(Event("old-1"))))
+            await started.wait()
+            tasks.append(asyncio.create_task(service.handle(Event("old-2"))))
+            await asyncio.sleep(0)
+            await asyncio.wait_for(service.handle(Event("/multica stop")), 0.5)
+            proceed.set()
+            await asyncio.gather(*tasks)
+            assert not client.sent
+        finally:
+            proceed.set()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            await service.close()
+
+    asyncio.run(run())
+
+
+def test_stop_waits_for_inflight_post_before_remote_cancellation(tmp_path):
+    async def run():
+        service, client, _ = setup_service(tmp_path)
+        started, proceed = asyncio.Event(), asyncio.Event()
+        trace, tasks = [], []
+        try:
+            await service.handle(Event())
+            await service.worker.close()
+
+            async def send(*args):
+                started.set()
+                await proceed.wait()
+                trace.append("accepted")
+                return {"message_id": "m", "task_id": "t"}
+
+            async def stop(*args):
+                trace.append("stop")
+
+            client.send_chat, client.stop = send, stop
+            tasks.append(asyncio.create_task(service.handle(Event("in flight"))))
+            await started.wait()
+            stopping = asyncio.create_task(service.handle(Event("/multica stop")))
+            tasks.append(stopping)
+            await asyncio.sleep(0)
+            assert not stopping.done()
+            during = Event("during stop")
+            await asyncio.wait_for(service.handle(during), 0.5)
+            assert during.replies
+            proceed.set()
+            await asyncio.gather(*tasks)
+            assert trace == ["accepted", "stop"]
+        finally:
+            proceed.set()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            await service.close()
+
+    asyncio.run(run())
+
+
 def test_exit_while_chat_creation_is_in_flight_cannot_reenter(tmp_path):
     async def run():
         service, client, _ = setup_service(tmp_path)
@@ -117,7 +187,7 @@ def test_exit_suppresses_late_submission_error(tmp_path):
     [
         ("enabled", False),
         ("work_mode_enabled", False),
-        ("group_chat_mode", "whitelist"),
+        ("multica_whitelist", []),
     ],
 )
 def test_revoking_policy_during_history_prevents_submission(tmp_path, setting, value):

@@ -76,27 +76,12 @@ class TestMaskSecret:
 
 
 class TestChatAllowed:
-    CFG = {
-        "group_chat_mode": "blacklist",
-        "group_chat_list": ["111"],
-        "private_chat_mode": "whitelist",
-        "private_chat_list": ["222"],
-    }
-
-    def test_blacklist(self) -> None:
-        assert mc.check_chat_allowed(self.CFG, "group", "111") is False
-        assert mc.check_chat_allowed(self.CFG, "group", "999") is True
-
-    def test_whitelist(self) -> None:
-        assert mc.check_chat_allowed(self.CFG, "private", "222") is True
-        assert mc.check_chat_allowed(self.CFG, "private", "333") is False
-
-    def test_disabled(self) -> None:
-        cfg = dict(self.CFG, group_chat_mode="disabled")
-        assert mc.check_chat_allowed(cfg, "group", "111") is True
-
-    def test_invalid_cfg_is_permissive(self) -> None:
-        assert mc.check_chat_allowed(None, "group", "1") is True
+    def test_sender_allowlist_applies_to_both_chat_types(self):
+        cfg = {"multica_whitelist": ["42"]}
+        assert mc.check_chat_allowed(cfg, "group", "42")
+        assert mc.check_chat_allowed(cfg, "private", "42")
+        assert not mc.check_chat_allowed(cfg, "group", "43")
+        assert not mc.check_chat_allowed(None, "private", "42")
 
 
 class TestWorkspaceLookup:
@@ -122,12 +107,12 @@ class TestWorkspaceLookup:
         assert client.find_workspace("nope", self.WORKSPACES) is None
         assert client.find_workspace("", self.WORKSPACES) is None
 
-    def test_pick_prefers_configured_then_first(self) -> None:
+    def test_pick_prefers_configured_and_requires_unambiguous_default(self) -> None:
         client = mc.MulticaClient({"workspace_id": "other"})
         _ws, name, _id = client._pick_workspace(self.WORKSPACES)
         assert name == "B"
         fallback = mc.MulticaClient({})
-        assert fallback._pick_workspace(self.WORKSPACES)[1] == "A"
+        assert fallback._pick_workspace(self.WORKSPACES[:1])[1] == "A"
 
 
 class TestProjectLookup:

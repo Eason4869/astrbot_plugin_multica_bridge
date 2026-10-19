@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import inspect
 
-from .session_store import conversation_key
-
 GUARDS = (
     "WhitelistCheckStage",
     "SessionStatusCheckStage",
@@ -49,6 +47,7 @@ class WorkModeRouter:
         router = self
 
         async def route(scheduler, event, from_stage=0):
+            event._multica_scheduler = scheduler
             if (
                 from_stage
                 or router.service.closed
@@ -73,7 +72,6 @@ class WorkModeRouter:
 
     async def _owned(self, scheduler, event) -> None:
         cfg = scheduler.ctx.astrbot_config
-        state = self.service.store.get(conversation_key(event))
         # Work mode receives every message in the window. Never feed the bot's
         # own echoed output back to Multica, regardless of the ordinary wake policy.
         if event.get_self_id() and str(event.get_self_id()) == str(
@@ -118,15 +116,15 @@ class WorkModeRouter:
                 await result
             if event.is_stopped():
                 return
-        if self.permission and not self.permission(event, cfg):
-            await self.service.reply(event, "权限不足，无法执行此 Multica 操作。")
-            return
         allowed = getattr(self.service.plugin, "_chat_allowed", None)
         if allowed and not allowed(event):
-            if state["active"]:
-                await self.service.reply(
-                    event, "本会话已被桥接访问规则限制；工作模式暂停转发。"
-                )
+            from .multica_client import PERMISSION_DENIED
+
+            # Denial is deliberately exact, without the work-result prefix.
+            await self.service.say(event, PERMISSION_DENIED)
+            return
+        if self.permission and not self.permission(event, cfg):
+            await self.service.reply(event, "权限不足，无法执行此 Multica 操作。")
             return
         await self.service.handle(event)
 

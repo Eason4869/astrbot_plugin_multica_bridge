@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.0.0/logo.svg" width="88" height="88" alt="Multica Bridge" />
+<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.1.0/logo.svg" width="88" height="88" alt="Multica Bridge" />
 
 # AstrBot Multica Bridge
 
 **在 QQ 中进入 Multica，连续对话，随时退出。**
 
-![Version](https://img.shields.io/badge/version-1.0.0-3456cf)
+![Version](https://img.shields.io/badge/version-1.1.0-3456cf)
 ![Branch](https://img.shields.io/badge/branch-main-475569)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)
 ![AstrBot](https://img.shields.io/badge/AstrBot-%E2%89%A54.27.2-4f8cff)
@@ -37,10 +37,10 @@
 | --- | --- |
 | 连续对话 | 进入后无需重复命令或每次 @，直接向同一个 Multica Chat 追问 |
 | 独占工作回复 | 工作消息由桥接接管，其他插件和 AstrBot 默认模型不再处理、回复这些消息 |
-| 聊天窗口隔离 | 群 A 开启后全群共用模式与上下文；群 B、私聊 C 仍可正常使用 AstrBot |
+| 聊天窗口隔离 | 仅开启者的文字转发；同群其他成员、其他群和私聊继续正常使用 AstrBot |
 | 来源提示 | 每段工作回复、错误提示均带 `【来自 Multica｜工作模式】` |
 | 会话管理 | 恢复对话、新建 Chat、选择智能体、停止执行；WebUI 可退出指定窗口 |
-| 保留原功能 | Issue、收件箱、工作区、项目管理及普通模式自然语言控制继续可用 |
+| 保留原功能 | Issue、收件箱及兼容管理命令保留；自然语言支持进入模式、查询和 Issue 草稿确认 |
 | 升级保留连接 | 沿用旧配置路径和字段，保留 URL、Token、工作区、项目与访问规则 |
 
 ## 开始使用
@@ -49,7 +49,7 @@
 
 ### 1. 安装正式版
 
-在 AstrBot 插件管理中通过仓库地址安装或更新：`https://github.com/Eason4869/astrbot_plugin_multica_bridge`。默认使用 `main` 分支；固定版本安装包见 [v1.0.0 Release](https://github.com/Eason4869/astrbot_plugin_multica_bridge/releases/tag/v1.0.0)。也可在 AstrBot 插件目录手动安装：
+在 AstrBot 插件管理中通过仓库地址安装或更新：`https://github.com/Eason4869/astrbot_plugin_multica_bridge`。正式版本使用 `main` 分支，开发更新使用 `dev` 分支。也可从 [v1.1.0 Release](https://github.com/Eason4869/astrbot_plugin_multica_bridge/releases/tag/v1.1.0) 下载安装 ZIP 和 SHA256 校验文件，或在 AstrBot 插件目录手动安装：
 
 ```bash
 cd AstrBot/data/plugins
@@ -66,9 +66,21 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 本插件使用自己的设置页保存配置，不使用插件管理的通用齿轮配置入口。设置修改后自动保存并热生效，请确认页面显示保存成功。
 
-### 3. 在 QQ 中开始
+### 3. 配置 Multica 放行用户名单
 
-在允许的群聊或私聊中发送 `/multica`。成功进入后直接发送文字，与 Multica 连续对话。用 `/multica status` 查看状态，用 `/multica exit` 退出。
+在设置页填写放行的用户 ID 或完整 UMO，每行一项，可以混填；匹配任意一项即放行。名单为空时无人可用。
+
+| 填法 | 作用范围 |
+| --- | --- |
+| `用户QQ号` | 该用户可在所有群聊和私聊使用 |
+| `机器人ID:FriendMessage:用户QQ号` | 仅该用户通过 机器人ID 的私聊可用，群聊不匹配 |
+| `机器人ID:GroupMessage:群号` | 放行 机器人ID 所在的该群所有成员使用指令 |
+
+未获放行时回复：`您没有使用Multica的权限，请联系管理员获取使用资格`。指令默认向所有人开放；历史上单独配置的管理员限制仍生效，可在 AstrBot「指令管理」改为所有人。
+
+### 4. 在 QQ 中开始
+
+放行后在群聊或私聊中发送 `/multica`，也可说“进入multica模式”“切换为multica工作”。成功进入后直接发送文字，与 Multica 连续对话。用 `/multica status` 查看状态，用 `/multica exit` 退出。
 
 ## 从旧版升级
 
@@ -90,16 +102,16 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 
 ## 工作模式
 
-### 按聊天窗口隔离
+### 按窗口保存，群聊仅开启者转发
 
 | 窗口 | 操作 | 结果 |
 | --- | --- | --- |
-| 群 A | 任一有权限成员输入 `/multica` | 群 A 全体成员共享工作模式与同一 Chat |
+| 群 A | 任一有权限成员输入 `/multica` | 仅开启者的文字进入该 Chat；其他群友继续使用 AstrBot |
 | 群 B | 未开启 | 继续与 AstrBot、其他插件正常交互 |
 | 私聊 C | 未开启 | 继续普通模式，不受群 A 影响 |
-| 群 A | 有权限成员输入 `/multica exit` | 整个群 A 恢复普通模式 |
+| 群 A | 开启者输入 `/multica exit` | 结束该工作会话 |
 
-群聊消息附带发送者信息，方便智能体区分发言人；同群上下文仍是共享的。进入权限也控制工作消息发送权限，可在 AstrBot「指令管理」中配置 `multica enter`。
+群聊工作消息附带开启者昵称和 QQ 号。只有开启者的消息转发，回复仍在群内可见；其他成员不能接管或退出该会话。开启者退出后，另一人开启将新建 Chat。旧版没有开启者信息的共享会话升级后暂停，请用 `/multica new` 建立新会话。
 
 ### 退出、停止与新对话
 
@@ -117,13 +129,13 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 
 ## WebUI 工作台
 
-<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.0.0/assets/workbench.png" width="1100" alt="Multica 工作台：连接状态、工作模式开关、智能体与当前工作会话" />
+<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.1.0/assets/workbench.png" width="1100" alt="Multica 工作台：连接状态、工作模式开关、智能体与当前工作会话" />
 
 *界面示例，地址、群号与会话均为演示数据。*
 
 - **总览**：显示连接检测结果、路由就绪状态和正在工作的聊天数量。
 - **工作模式**：控制转发开关、设置默认智能体、查看会话并退出指定窗口。
-- **连接与访问**：配置 URL、Token、工作区、项目，以及群聊／私聊访问规则。
+- **连接与访问**：配置 URL、Token、工作区、项目，以及统一的 Multica 放行用户名单。
 - **指令与高级设置**：查看常用指令，调整普通模式的自然语言控制。
 
 支持浅色／暗色、中英文及手机布局。工作模式开关关闭后暂停转发，已开启窗口仍需 `/multica exit` 或页面退出操作恢复普通模式。
@@ -138,13 +150,12 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 | `workspace_id` / `project_id` | 空 | 指定工作区与项目 |
 | `work_mode_enabled` | `true` | 是否允许工作模式转发 |
 | `default_agent_id` | 空 | 默认智能体 ID |
-| `group_chat_mode` / `private_chat_mode` | `blacklist` | `blacklist`、`whitelist` 或 `disabled` |
-| `group_chat_list` / `private_chat_list` | `[]` | 对应群号／私聊用户 ID 列表 |
+| `multica_whitelist` | `[]` | 放行的 UID 或完整 UMO 列表，空列表拒绝所有用户 |
 | `nl_enabled` | `true` | 普通模式自然语言控制 |
 | `nl_keyword` | `multica` | 普通模式触发关键词 |
 | `nl_llm_enabled` | `true` | 普通模式规则未命中时允许模型解析意图 |
 
-工作模式使用当前 Token 所属账号的 Multica 权限。多人共用时，建议设置会话白名单并限制进入权限。更改 URL、Token、工作区或项目后，使用 `/multica new` 建立新的 Chat 绑定。
+工作模式使用当前 Token 所属账号的 Multica 权限。只向可信用户或会话放行。旧群聊/私聊过滤字段不再控制权限；若旧配置明确使用私聊白名单，其条目会在内存中迁为放行名单，其他情况需要重新填写。更改 URL、Token、工作区或项目后，使用 `/multica new` 建立新的 Chat 绑定。
 
 ## 指令
 
@@ -155,12 +166,12 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 | `/multica` | 进入或恢复当前窗口的工作模式 |
 | `/multica exit` | 退出当前窗口，恢复普通机器人 |
 | `/multica new` | 开启新 Chat |
-| `/multica agent <编号或ID>` | 选择智能体并开启新 Chat |
+| `/multica agent [编号或ID]` | 无参数列出智能体；指定后开启新 Chat |
 | `/multica stop` | 请求停止执行并清空排队消息 |
 | `/multica status` | 查看模式、绑定与执行状态；无绑定时显示连接信息 |
 | `/multica help` | 查看帮助 |
 
-### Issue 与项目管理
+### 高级 Issue 与兼容管理命令
 
 | 指令 | 用途 |
 | --- | --- |
@@ -177,7 +188,7 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 /multica issue create 修复登录失败 --desc 用户反馈登录超时 --priority 高 --labels 后端,线上
 ```
 
-Issue 可选参数：`--desc`、`--priority`（紧急／高／中／低或英文）、`--status`、`--assignee`、`--project`、`--due YYYY-MM-DD`、`--labels 标签1,标签2`。这些功能通过 HTTP API 调用，不需要本机安装 Multica CLI。各子指令可在 AstrBot「指令管理」中分别设置权限；创建工作区、项目和切换全局配置建议限管理员。
+Issue 可选参数：`--desc`、`--priority`（紧急／高／中／低或英文）、`--status`、`--assignee`、`--project`、`--due YYYY-MM-DD`、`--labels 标签1,标签2`。这些功能通过 HTTP API 调用，不需要本机安装 Multica CLI。旧管理命令保留原权限配置；工作区与项目选择全局生效，建议在 WebUI 读取列表并选择。切换工作区清空旧项目，旧 Chat 绑定暂停，需要 `/multica new`。
 
 ### 普通模式自然语言控制
 
@@ -186,10 +197,13 @@ Issue 可选参数：`--desc`、`--priority`（紧急／高／中／低或英文
 ```text
 multica 建个issue：修复登录失败，优先级高
 multica 收件箱 10 open
-multica 切换到项目 前端重构
+进入multica模式
+切换为multica工作
 ```
 
-规则优先解析；规则未命中时，可由 `nl_llm_enabled` 控制是否调用 AstrBot 模型解析管理意图。此设置只影响普通模式。工作模式文字直接转发给 Multica。
+规则优先解析，明确进入语句不消耗 AstrBot 模型。可执行意图为进入模式、帮助、状态、收件箱和创建 Issue。Issue 先显示草稿，120 秒内由本人回复“确认 六位短码”才提交，可回复“取消 六位短码”；重复确认不会重复写入。否定、教学、引用和复合请求不自动执行，项目/工作区的自然语言管理改为设置页指引。
+
+规则无法解析时，由 `nl_llm_enabled` 决定是否调用模型，限时 10 秒且不自动重试。工作模式文字直接转发给 Multica，退出使用 `/multica exit`；说“退出工作模式”不会改变本地模式。
 
 ## 常见问题
 
@@ -203,12 +217,12 @@ multica 切换到项目 前端重构
 
 **升级后设置页看起来没变？**
 
-确认已更新到 1.0.0，重载插件并刷新 AstrBot 页面；必要时强制刷新浏览器缓存。不要通过删除插件数据来刷新设置页。
+确认已安装对应版本，重载插件并刷新 AstrBot 页面；必要时强制刷新浏览器缓存。不要通过删除插件数据来刷新设置页。
 
 **已经验证了哪些环境？**
 
-本地 Python 3.10 / 3.12 回归、旧配置覆盖升级、AstrBot 4.27.2 / 4.29.1 源码路由集成，以及 Edge 桌面／手机／主题切换验证已通过。尚未进行真实 QQ 和 Multica 服务联调。具体范围与复现方法见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.0.0/docs/verification-1.0.0.md)。
+Python 3.10 / 3.12 各 182 项测试通过，覆盖旧配置升级和两个 AstrBot 源码版本；Edge 桌面/手机/主题/双语验证通过。远程检查见 [CI](https://github.com/Eason4869/astrbot_plugin_multica_bridge/actions/workflows/ci.yml)。尚未进行真实 QQ、Multica 和真实模型评测；自动化通过不代表线上联调完成。具体范围见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.1.0/docs/verification-1.1.0.md)。
 
 ## 项目信息
 
-[更新日志](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.0.0/CHANGELOG.md) · [问题反馈](https://github.com/Eason4869/astrbot_plugin_multica_bridge/issues) · [Multica](https://github.com/multica-ai/multica) · [AstrBot](https://github.com/AstrBotDevs/AstrBot) · [MIT License](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.0.0/LICENSE)
+[更新日志](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.1.0/CHANGELOG.md) · [问题反馈](https://github.com/Eason4869/astrbot_plugin_multica_bridge/issues) · [Multica](https://github.com/multica-ai/multica) · [AstrBot](https://github.com/AstrBotDevs/AstrBot) · [MIT License](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.1.0/LICENSE)
