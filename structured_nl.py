@@ -53,7 +53,7 @@ def validate_action_fields(
         return {}
     if action == "inbox":
         if set(fields) - {"count", "status"}:
-            raise ValueError("未知收件箱字段")
+            raise ValueError("未知Issue列表字段")
         count, status = fields.get("count", 10), fields.get("status", "")
         if (
             type(count) is not int

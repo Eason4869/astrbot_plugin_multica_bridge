@@ -58,7 +58,7 @@ _NOISE_PREFIXES = (
 
 # 可直接映射到既有子指令的「指令风格」尾巴
 _CMD_TAIL = re.compile(
-    r"^(?P<head>help|status|inbox|h|帮助|状态|收件箱)\b",
+    r"^(?P<head>help|status|inbox|h|帮助|状态|issue列表|收件箱)\b",
     re.IGNORECASE,
 )
 
@@ -449,7 +449,7 @@ def parse_nl_intent(text: str, keyword: str = "multica") -> NLIntent | None:
             return NLIntent("help")
         if token in ("status", "状态"):
             return NLIntent("status")
-        if token in ("inbox", "收件箱"):
+        if token in ("inbox", "issue列表", "收件箱"):
             return NLIntent("inbox", _normalize_inbox_args(rest))
         return None
 
