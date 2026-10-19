@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.1.0/logo.svg" width="88" height="88" alt="Multica Bridge" />
+<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/dev/logo.svg" width="88" height="88" alt="Multica Bridge" />
 
 # AstrBot Multica Bridge
 
 **在 QQ 中进入 Multica，连续对话，随时退出。**
 
-![Version](https://img.shields.io/badge/version-1.1.0-3456cf)
+![Version](https://img.shields.io/badge/version-1.2.0-3456cf)
 ![Branch](https://img.shields.io/badge/branch-main-475569)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)
 ![AstrBot](https://img.shields.io/badge/AstrBot-%E2%89%A54.27.2-4f8cff)
@@ -40,7 +40,7 @@
 | 聊天窗口隔离 | 仅开启者的文字转发；同群其他成员、其他群和私聊继续正常使用 AstrBot |
 | 来源提示 | 每段工作回复、错误提示均带 `【来自 Multica｜工作模式】` |
 | 会话管理 | 恢复对话、新建 Chat、选择智能体、停止执行；WebUI 可退出指定窗口 |
-| 保留原功能 | Issue、收件箱及兼容管理命令保留；自然语言支持进入模式、查询和 Issue 草稿确认 |
+| 保留原功能 | Issue创建、Issue列表及兼容管理命令保留；自然语言支持进入模式、查询和 Issue 草稿确认 |
 | 升级保留连接 | 沿用旧配置路径和字段，保留 URL、Token、工作区、项目与访问规则 |
 
 ## 开始使用
@@ -49,7 +49,7 @@
 
 ### 1. 安装正式版
 
-在 AstrBot 插件管理中通过仓库地址安装或更新：`https://github.com/Eason4869/astrbot_plugin_multica_bridge`。正式版本使用 `main` 分支，开发更新使用 `dev` 分支。也可从 [v1.1.0 Release](https://github.com/Eason4869/astrbot_plugin_multica_bridge/releases/tag/v1.1.0) 下载安装 ZIP 和 SHA256 校验文件，或在 AstrBot 插件目录手动安装：
+在 AstrBot 插件管理中通过仓库地址安装或更新：`https://github.com/Eason4869/astrbot_plugin_multica_bridge`。正式版本使用 `main` 分支，开发更新使用 `dev` 分支。也可从 [Releases](https://github.com/Eason4869/astrbot_plugin_multica_bridge/releases) 下载已发布版本的安装 ZIP 和 SHA256 校验文件，或在 AstrBot 插件目录手动安装：
 
 ```bash
 cd AstrBot/data/plugins
@@ -60,9 +60,9 @@ git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 
 ### 2. 配置连接
 
-进入 **AstrBot WebUI → 插件 → Multica桥接 → 设置**，填写 API 地址与 Token，点击「测试连接」。在 Multica 侧创建可用 API Token；自托管填写自己的服务器地址。
+进入 **AstrBot WebUI → 插件 → Multica桥接 → 设置 → 连接与访问**，填写 API 地址与 Token，点击填写区旁的「测试连接」。测试会自动读取当前 Token 可访问的全部工作区，将名称和完整 ID 显示在「默认工作区」下拉框。在 Multica 侧创建可用 API Token；自托管填写自己的服务器地址。
 
-工作区可留空自动解析，也可指定 ID。读取智能体列表并设置默认智能体：只有一个可用智能体时可自动选择；存在多个且未设默认值时，进入命令会返回编号供选择。
+只有一个工作区时可以留空自动解析；存在多个工作区时必须从下拉框明确选择，不会自动选第一项。选择后自动保存，完整 ID 显示在下拉框下方，获取方法见「常见问题」。再读取智能体列表并设置默认智能体：只有一个可用智能体时可自动选择；存在多个且未设默认值时，进入命令会返回编号供选择。
 
 本插件使用自己的设置页保存配置，不使用插件管理的通用齿轮配置入口。设置修改后自动保存并热生效，请确认页面显示保存成功。
 
@@ -129,7 +129,7 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 
 ## WebUI 工作台
 
-<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.1.0/assets/workbench.png" width="1100" alt="Multica 工作台：连接状态、工作模式开关、智能体与当前工作会话" />
+<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/dev/assets/workbench.png" width="1100" alt="Multica 工作台：连接测试、默认工作区下拉框、智能体与当前工作会话" />
 
 *界面示例，地址、群号与会话均为演示数据。*
 
@@ -176,7 +176,7 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 | 指令 | 用途 |
 | --- | --- |
 | `/multica issue create <标题> [选项]` | 新建 Issue |
-| `/multica inbox [数量] [open\|done]` | 查看收件箱，默认 10 条 |
+| `/multica inbox [数量] [open\|done]` | 查看Issue列表，默认 10 条 |
 | `/multica workspace list` | 列出工作区 |
 | `/multica workspace select <id\|slug>` | 切换工作区并保存配置 |
 | `/multica workspace create <名称> [--slug …] [--desc …] [--context …]` | 新建工作区 |
@@ -190,22 +190,89 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 
 Issue 可选参数：`--desc`、`--priority`（紧急／高／中／低或英文）、`--status`、`--assignee`、`--project`、`--due YYYY-MM-DD`、`--labels 标签1,标签2`。这些功能通过 HTTP API 调用，不需要本机安装 Multica CLI。旧管理命令保留原权限配置；工作区与项目选择全局生效，建议在 WebUI 读取列表并选择。切换工作区清空旧项目，旧 Chat 绑定暂停，需要 `/multica new`。
 
+这里的 **Issue列表** 查询当前工作区的 Issue，不是 Multica 的通知收件箱。可使用 `/multica Issue列表` 或 `/multica issue列表`；原 `/multica inbox` 和中文旧别名继续兼容。
+
 ### 普通模式自然语言控制
 
 未进入工作模式时，可用关键词触发原有管理功能：
 
 ```text
 multica 建个issue：修复登录失败，优先级高
-multica 收件箱 10 open
+multica Issue列表 10 open
 进入multica模式
 切换为multica工作
 ```
 
-规则优先解析，明确进入语句不消耗 AstrBot 模型。可执行意图为进入模式、帮助、状态、收件箱和创建 Issue。Issue 先显示草稿，120 秒内由本人回复“确认 六位短码”才提交，可回复“取消 六位短码”；重复确认不会重复写入。否定、教学、引用和复合请求不自动执行，项目/工作区的自然语言管理改为设置页指引。
+规则优先解析，明确进入语句不消耗 AstrBot 模型。可执行意图为进入模式、帮助、状态、Issue列表和创建 Issue。Issue 先显示草稿，120 秒内由本人回复“确认 六位短码”才提交，可回复“取消 六位短码”；重复确认不会重复写入。否定、教学、引用和复合请求不自动执行，项目/工作区的自然语言管理改为设置页指引。
 
 规则无法解析时，由 `nl_llm_enabled` 决定是否调用模型，限时 10 秒且不自动重试。工作模式文字直接转发给 Multica，退出使用 `/multica exit`；说“退出工作模式”不会改变本地模式。
 
 ## 常见问题
+
+**有多个工作区时，如何获取工作区 ID 并选择默认工作区？**
+
+工作区 ID 是 Multica 为工作区分配的唯一标识，通常是 UUID，例如 `12345678-1234-1234-1234-123456789abc`。应复制工作区对象的 `id`，不要填项目 ID、智能体 ID、用户 ID 或工作区显示名称。以下方法都只会列出当前 Token 有权限访问的工作区。
+
+**方法一：直接在插件设置页读取并选择（推荐）**
+
+1. 打开 **AstrBot WebUI → 插件 → Multica桥接 → 设置 → 连接与访问**。
+2. 填写 Multica API 地址和 Token，确认已启用桥接，等待页面提示「所有更改已保存」。已有 URL / Token 无需重填。
+3. 点击 API 地址和 Token 填写区旁的 **测试连接**。连接有效后，插件会自动读取工作区列表，无需先知道工作区 ID。
+4. 展开 **默认工作区** 下拉框，按 **工作区名称 · 完整 ID** 找到目标工作区。若有多个且尚未指定，会提示选择；已有有效选择会保留，不会被第一项覆盖。
+5. 选中后等待自动保存成功。下拉框下方显示选中工作区的完整 ID，可选中复制；如需重新获取列表，点击 **读取工作区**。
+6. 再测试连接，核对显示的工作区名称。需要绑定项目时，在此工作区下点击 **读取项目**，选择对应项目。
+
+只有一个工作区时可以保留「自动使用唯一工作区」；多个工作区时请明确选择。若原 ID 已失效，下拉框会保留原值并提示不可访问，需要重新选一个有效项。
+
+**方法二：在 QQ 中使用保留的管理命令**
+
+先确保自己的 QQ UID 或所在会话 UMO 已加入插件放行名单，且 AstrBot 未禁用相关指令。在机器人聊天中发送：
+
+```text
+/multica workspace list
+```
+
+返回示例（以下是演示数据，不是你的真实 ID）：
+
+```text
+共 2 个工作区：
+• 研发工作区（slug: development）
+  12345678-1234-1234-1234-123456789abc
+• 生产工作区（slug: production）
+  87654321-4321-4321-4321-cba987654321
+```
+
+每个名称下方的一整行就是工作区 ID。复制目标 ID 后，可发送以下命令切换并自动保存默认工作区：
+
+```text
+/multica workspace select 12345678-1234-1234-1234-123456789abc
+```
+
+命令也支持完整 slug（例如 `development`），但完整 ID 最明确。列表查询不要求预先选好工作区；不要用 `/multica status` 代替首次列表查询。
+
+**方法三：直接通过 Multica API 查询（备用）**
+
+使用与插件设置相同的 API 基地址和 Token，发送 `GET <API基地址>/api/workspaces`，认证头为 `Authorization: Bearer <Token>`。Windows PowerShell 可使用以下只读命令；将地址替换为自己的地址，Token 在提示时输入：
+
+```powershell
+$multicaBaseUrl = "https://你的Multica地址".TrimEnd('/')
+$multicaSecureToken = Read-Host "输入 Multica API Token" -AsSecureString
+$multicaCredential = [System.Management.Automation.PSCredential]::new("multica", $multicaSecureToken)
+$multicaHeaders = @{ Authorization = "Bearer " + $multicaCredential.GetNetworkCredential().Password }
+$multicaWorkspaces = Invoke-RestMethod -Method Get -Uri "$multicaBaseUrl/api/workspaces" -Headers $multicaHeaders
+$multicaWorkspaces | Select-Object name, slug, id | Format-Table -AutoSize
+Remove-Variable multicaHeaders, multicaCredential, multicaSecureToken
+```
+
+输出中 `id` 列就是所需的完整工作区 ID；`name` 用来辨认，`slug` 是工作区别名。该查询不需要 `workspace_id`，不会创建或修改工作区。接口实现可参阅 [Multica 官方工作区接口](https://github.com/multica-ai/multica/blob/main/server/internal/handler/workspace.go)。
+
+**读不到列表或切换后不能继续对话？**
+
+- 提示存在多个工作区：表示需要明确选择，不能依赖留空自动发现；新设置页会将「连接成功」与「待选择工作区」分别提示。
+- 下拉框暂无选项：先测试连接；也可用「读取工作区」刷新。查询失败不会覆盖已保存的工作区 ID。
+- `401`：检查 Token 是否正确或已失效；`403` 或找不到目标工作区：检查 Token 所属账号是否有访问权限、API 地址是否属于正确实例。空列表表示当前 Token 没有可列出的工作区。
+- 设置页没有下拉框或按钮仍在顶部：需要安装包含本次界面改动的版本，重载插件并强制刷新页面；旧版也可先用方法二或三获取 ID。
+- **默认工作区是插件全局配置，并非按群单独设置。** 切换工作区会清空旧项目，已有 Chat 绑定会暂停；重新选择项目后，在受影响聊天发送 `/multica new` 建立新绑定。工作模式的聊天隔离不等于每个窗口可单独设置默认工作区。
 
 **连接测试通过，为什么还无法进入？**
 
@@ -221,8 +288,8 @@ multica 收件箱 10 open
 
 **已经验证了哪些环境？**
 
-Python 3.10 / 3.12 各 182 项测试通过，覆盖旧配置升级和两个 AstrBot 源码版本；Edge 桌面/手机/主题/双语验证通过。远程检查见 [CI](https://github.com/Eason4869/astrbot_plugin_multica_bridge/actions/workflows/ci.yml)。尚未进行真实 QQ、Multica 和真实模型评测；自动化通过不代表线上联调完成。具体范围见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.1.0/docs/verification-1.1.0.md)。
+Python 3.10 / 3.12 各 194 项测试通过，覆盖旧配置升级、多工作区发现与两个 AstrBot 源码版本；Edge 桌面/手机/主题/双语验证通过。远程检查见 [CI](https://github.com/Eason4869/astrbot_plugin_multica_bridge/actions/workflows/ci.yml)。尚未进行真实 QQ、Multica 和真实模型评测；自动化通过不代表线上联调完成。具体范围见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/dev/docs/verification-1.2.0.md)。
 
 ## 项目信息
 
-[更新日志](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.1.0/CHANGELOG.md) · [问题反馈](https://github.com/Eason4869/astrbot_plugin_multica_bridge/issues) · [Multica](https://github.com/multica-ai/multica) · [AstrBot](https://github.com/AstrBotDevs/AstrBot) · [MIT License](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.1.0/LICENSE)
+[更新日志](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/dev/CHANGELOG.md) · [问题反馈](https://github.com/Eason4869/astrbot_plugin_multica_bridge/issues) · [Multica](https://github.com/multica-ai/multica) · [AstrBot](https://github.com/AstrBotDevs/AstrBot) · [MIT License](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/dev/LICENSE)

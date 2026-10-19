@@ -50,7 +50,7 @@
       "keywordHint": "消息中包含该词（不区分大小写）才会触发意图识别，默认 multica",
       "llm": "规则失败时使用 LLM",
       "llmHint": "优先本地规则解析；复杂句子可选用 AstrBot 当前 LLM 回退",
-      "note": "示例：进入multica模式 · 切换为multica工作 · multica 建个issue：修复登录 · multica 收件箱 5 open。退出请用 /multica exit。"
+      "note": "示例：进入multica模式 · 切换为multica工作 · multica 建个issue：修复登录 · multica Issue列表 5 open。退出请用 /multica exit。"
     },
     "perm": {
       "note": "指令默认面向所有人，使用资格由放行名单决定。若历史指令设为仅管理员，可在 AstrBot「指令管理」改为所有人。"
@@ -68,7 +68,7 @@
       "projList": "列出当前工作区的项目",
       "projSelect": "切换当前项目（持久化）",
       "projCreate": "创建项目",
-      "inbox": "收件箱：最近 Issue 及进展",
+      "inbox": "Issue列表：最近 Issue 及进展",
       "nl": "自然语言控制（消息含关键词即可）"
     },
     "test": {
@@ -130,9 +130,9 @@
       "tokenOwnerHint": "操作使用当前 Token 的权限，仅向可信用户或会话开放。",
       "commandHint": "工作模式不需要重复指令；下面的命令用于控制会话。",
       "advanced": "普通模式中的自然语言控制与管理命令",
-      "nlHint": "普通模式可识别进入工作模式、查询收件箱和创建 Issue；Issue 写入前需本人确认。",
+      "nlHint": "普通模式可识别进入工作模式、查询Issue列表和创建 Issue；Issue 写入前需本人确认。",
       "nlModelHint": "普通模式可用 AstrBot 模型识别管理意图。工作模式始终直接连接 Multica。",
-      "managementHint": "高级入口：/multica inbox、/multica issue create。旧 workspace/project 命令保留兼容，建议在设置页管理全局默认值。",
+      "managementHint": "高级入口：/multica inbox（Issue列表）、/multica issue create。旧 workspace/project 命令保留兼容，建议在设置页管理全局默认值。",
       "footer": "连接配置保留，工作状态按聊天保存。",
       "loaded": "配置已读取",
       "saving": "正在保存",
@@ -177,6 +177,16 @@
       "pause_access_revoked": "开启者不在放行名单中"
     },
     "picker": {
+      "connectionHint": "验证 URL 和 Token 后，自动读取可选工作区。",
+      "workspaceLabel": "默认工作区",
+      "workspaceHint": "下拉选项显示名称与完整 ID，选择后自动保存。",
+      "workspaceChoose": "请先测试连接，再选择工作区",
+      "workspaceRequired": "请选择默认工作区",
+      "workspaceAuto": "自动使用唯一工作区",
+      "workspaceSaved": "已保存，待验证",
+      "workspaceUnavailable": "原工作区不可访问，请重新选择",
+      "workspacesLoaded": "工作区列表已更新，请选择默认工作区",
+      "connectedChoose": "连接成功，已读取工作区；请选择默认工作区后继续。",
       "auto": "自动选择智能体",
       "autoHint": "进入时自动选择唯一可用智能体",
       "loading": "正在读取智能体…",

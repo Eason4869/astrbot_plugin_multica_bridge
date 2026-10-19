@@ -50,7 +50,7 @@
       "keywordHint": "Intent recognition runs only when the message contains this keyword (case-insensitive). Default: multica",
       "llm": "Use LLM when rules fail",
       "llmHint": "Local rules run first; complex sentences can fall back to the current AstrBot LLM",
-      "note": "Enter work mode naturally, query the inbox, or draft an Issue. Exit with /multica exit; ordinary work text is forwarded directly."
+      "note": "Enter work mode naturally, query the Issue list, or draft an Issue. Exit with /multica exit; ordinary work text is forwarded directly."
     },
     "perm": {
       "note": "Commands are available to everyone by default; the access list controls eligibility. Remove any old admin-only override in AstrBot Command Management if needed."
@@ -68,7 +68,7 @@
       "projList": "List projects in the current workspace",
       "projSelect": "Switch the current project (persisted)",
       "projCreate": "Create a project",
-      "inbox": "Inbox: latest issues and progress",
+      "inbox": "Issue list: latest issues and progress",
       "nl": "Natural language control (message contains the keyword)"
     },
     "test": {
@@ -130,9 +130,9 @@
       "tokenOwnerHint": "Operations use the configured Token’s permissions. Grant access only to trusted users or chats.",
       "commandHint": "No repeated command is needed in work mode. Use these commands to control the conversation.",
       "advanced": "Natural-language controls and management in ordinary mode",
-      "nlHint": "In ordinary mode, enter work mode, query the inbox, or draft an Issue. Issue writes require the author’s confirmation.",
+      "nlHint": "In ordinary mode, enter work mode, query the Issue list, or draft an Issue. Issue writes require the author’s confirmation.",
       "nlModelHint": "Ordinary mode may use the AstrBot model to parse management requests. Work mode always talks directly to Multica.",
-      "managementHint": "Advanced: /multica inbox and /multica issue create. Legacy workspace/project commands remain compatible; manage global defaults in Settings.",
+      "managementHint": "Advanced: /multica inbox (Issue list) and /multica issue create. Legacy workspace/project commands remain compatible; manage global defaults in Settings.",
       "footer": "Connection retained. Work state saved per conversation.",
       "loaded": "Configuration loaded",
       "saving": "Saving changes",
@@ -177,6 +177,16 @@
       "pause_access_revoked": "Starter no longer has access"
     },
     "picker": {
+      "connectionHint": "Test the URL and Token to load available workspaces automatically.",
+      "workspaceLabel": "Default workspace",
+      "workspaceHint": "Options show the name and full ID. Selection is saved automatically.",
+      "workspaceChoose": "Test connection to load workspaces",
+      "workspaceRequired": "Choose a default workspace",
+      "workspaceAuto": "Use the only workspace automatically",
+      "workspaceSaved": "Saved, not verified",
+      "workspaceUnavailable": "Previous workspace unavailable; choose another",
+      "workspacesLoaded": "Workspaces loaded. Choose a default workspace.",
+      "connectedChoose": "Connected and workspaces loaded. Choose a default workspace to continue.",
       "auto": "Choose an agent automatically",
       "autoHint": "Select the only available agent when entering",
       "loading": "Loading agents…",

@@ -33,7 +33,7 @@ def help_text() -> str:
     return (
         "Multica 工作模式\n"
         + "\n".join(f"{cmd} — {desc}" for cmd, desc in MAIN_COMMANDS)
-        + "\n\n高级功能：/multica inbox、/multica issue create\n兼容管理：workspace/project 的 list/select/create 仍可使用，默认工作区与项目全局生效，建议使用 WebUI 设置。\n自然语言：进入multica模式、切换为multica工作；创建 Issue 需本人确认。\n群聊仅开启者的文字转发；回复在群内可见。退出使用 /multica exit。"
+        + "\n\n高级功能：/multica inbox（Issue列表）、/multica issue create\n兼容管理：workspace/project 的 list/select/create 仍可使用，默认工作区与项目全局生效，建议使用 WebUI 设置。\n自然语言：进入multica模式、切换为multica工作；创建 Issue 需本人确认。\n群聊仅开启者的文字转发；回复在群内可见。退出使用 /multica exit。"
     )
 
 

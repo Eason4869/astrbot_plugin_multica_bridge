@@ -660,6 +660,26 @@
       .connection-result.good {
         color: var(--teal);
       }
+      .connection-check {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 6px 0 22px;
+      }
+      .connection-check .btn { flex: 0 0 auto; }
+      .workspace-id {
+        display: block;
+        margin-top: 5px;
+        font-size: 11px;
+        color: var(--muted);
+        overflow-wrap: anywhere;
+        user-select: all;
+      }
+      #field-workspace_id { max-width: 100%; text-overflow: ellipsis; }
+      .workspace-fields { grid-template-columns: 1fr; }
+      @media (max-width: 480px) {
+        .connection-check { align-items: flex-start; flex-direction: column; gap: 10px; }
+      }
       .reference {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -1128,7 +1148,7 @@
           >
         </nav>
         <div class="rail-foot">
-          <b>AstrBot × Multica</b><span>v1.1.0</span>
+          <b>AstrBot × Multica</b><span>v1.2.0</span>
         </div>
       </aside>
       <main>
@@ -1149,16 +1169,7 @@
               data-i18n="settings.ui.retrySave"
             >
               重试保存</button
-            ><button class="btn btn-primary" id="btn-test" disabled>
-              <svg
-                viewBox="0 0 18 18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.6"
-              >
-                <path d="m7 3-3 5h5l-1 7 6-9H9l2-3" /></svg
-              ><span data-i18n="settings.test.button">测试连接</span>
-            </button>
+            >
           </div>
         </header>
         <div id="load-error" class="load-error hidden" role="alert"></div>
@@ -1397,20 +1408,27 @@
                   </button>
                 </div>
               </div>
-              <div class="sub-grid">
+              <div class="connection-check">
+                <button class="btn btn-primary" id="btn-test" disabled>
+                  <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m7 3-3 5h5l-1 7 6-9H9l2-3" /></svg>
+                  <span data-i18n="settings.test.button">测试连接</span>
+                </button>
+                <div id="test-result" class="connection-result" role="status" aria-live="polite" data-i18n="settings.picker.connectionHint">验证 URL 和 Token 后，自动读取可选工作区。</div>
+              </div>
+              <div class="sub-grid workspace-fields">
                 <label class="field"
                   ><span
                     class="field-label"
-                    data-i18n="settings.conn.workspaceId"
-                    >工作区 ID</span
-                  ><input
-                    class="field-control mono"
-                    id="field-workspace_id" list="workspace-options"
-                    placeholder="自动获取"
-                  /><span
+                    data-i18n="settings.picker.workspaceLabel"
+                    >默认工作区</span
+                  ><select class="field-control" id="field-workspace_id" aria-describedby="workspace-hint selected-workspace-id">
+                    <option value="" data-i18n="settings.picker.workspaceChoose">请先测试连接，再选择工作区</option>
+                  </select><span
                     class="field-hint"
-                    data-i18n="settings.conn.workspaceIdHint"
-                    >只有一个工作区时可留空，多个工作区请读取列表选择。</span
+                    id="workspace-hint"
+                    data-i18n="settings.picker.workspaceHint"
+                    >下拉选项显示名称与完整 ID，选择后自动保存。</span
+                  ><code class="workspace-id" id="selected-workspace-id"></code
                   ></label
                 ><label class="field"
                   ><span class="field-label" data-i18n="settings.conn.projectId"
@@ -1425,17 +1443,8 @@
                 >
               </div>
               <div class="context-tools"><button class="btn btn-quiet" id="btn-workspaces" data-i18n="settings.access.workspaces">读取工作区</button><button class="btn btn-quiet" id="btn-projects" data-i18n="settings.access.projects">读取项目</button><a class="btn btn-quiet" id="btn-open-multica" target="_blank" rel="noopener noreferrer" data-i18n="settings.access.manage">在 Multica 管理</a></div>
-              <datalist id="workspace-options"></datalist><datalist id="project-options"></datalist>
+              <datalist id="project-options"></datalist>
               <p class="field-hint" data-i18n="settings.access.context">工作区和项目为全局默认值。变更后旧绑定暂停，请在受影响聊天发送 /multica new；切换工作区会清空旧项目。</p>
-              <div class="divider"></div>
-              <div
-                id="test-result"
-                class="connection-result"
-                role="status"
-                data-i18n="settings.ui.testPlaceholder"
-              >
-                连接检测结果会显示在这里。
-              </div>
             </div>
             <div class="panel form-panel">
               <div class="access-heading"><h3 data-i18n="settings.access.title">Multica 放行用户名单</h3><span class="access-badge" data-i18n="settings.access.badge">UID / UMO</span></div>
@@ -1515,7 +1524,7 @@
                 <div>
                   <h3 data-i18n="settings.nl.enabled">启用自然语言控制</h3>
                   <p class="setting-description" data-i18n="settings.ui.nlHint">
-                    普通模式识别进入工作模式、收件箱查询和 Issue 草稿，写入前需本人确认。
+                    普通模式识别进入工作模式、Issue列表查询和 Issue 草稿，写入前需本人确认。
                   </p>
                 </div>
                 <label class="toggle"
@@ -1556,14 +1565,14 @@
                 class="setting-description"
                 data-i18n="settings.ui.managementHint"
               >
-                原有 issue、inbox、workspace、project 命令继续可用。发送
+                高级入口：/multica inbox（Issue列表）、/multica issue create。旧 workspace/project 命令保留兼容，建议在设置页管理全局默认值。
                 /multica help 查看说明。
               </p>
             </div>
           </details>
         </section>
         <footer class="footer">
-          <span>AstrBot Multica Bridge · v1.1.0</span
+          <span>AstrBot Multica Bridge · v1.2.0</span
           ><span data-i18n="settings.ui.footer"
             >连接配置保留，工作状态按聊天保存。</span
           >
@@ -1670,10 +1679,54 @@
           });
           if (cards.length) document.querySelector(".reference").replaceChildren(...cards);
         }
+        function renderWorkspaces(items, verified = false) {
+          const select = el("field-workspace_id");
+          const current = String(cfg.workspace_id || "");
+          const spaces = (items || []).filter(item => item && item.id);
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = verified && spaces.length === 1
+            ? t("settings.picker.workspaceAuto", "自动使用唯一工作区")
+            : verified && spaces.length
+              ? t("settings.picker.workspaceRequired", "请选择默认工作区")
+              : t("settings.picker.workspaceChoose", "请先测试连接，再选择工作区");
+          const options = spaces.map(item => {
+            const option = document.createElement("option");
+            option.value = String(item.id);
+            option.textContent = String(item.name || item.slug || item.id) + " · " + item.id;
+            option.title = option.textContent;
+            option.dataset.workspace = "true";
+            return option;
+          });
+          const selected = spaces.find(item => current && [item.id, item.slug].some(value => String(value || "").toLowerCase() === current.toLowerCase()));
+          if (current && !selected) {
+            const saved = document.createElement("option");
+            saved.value = current;
+            saved.textContent = t(verified ? "settings.picker.workspaceUnavailable" : "settings.picker.workspaceSaved", verified ? "原工作区不可访问，请重新选择" : "已保存，待验证") + " · " + current;
+            options.unshift(saved);
+          }
+          select.replaceChildren(placeholder, ...options);
+          select.value = selected ? String(selected.id) : current;
+          el("selected-workspace-id").textContent = select.value;
+        }
+        async function loadWorkspaces() {
+          const revision = connectionRevision;
+          const button = el("btn-workspaces");
+          button.disabled = true;
+          try {
+            await doSave();
+            const data = await apiPost("actions/list_workspaces");
+            if (revision !== connectionRevision) return;
+            renderWorkspaces(data.workspaces, true);
+            toast(t("settings.picker.workspacesLoaded", "工作区列表已更新，请选择默认工作区"));
+          } catch (error) { if (revision === connectionRevision) toast(error.message); }
+          finally { button.disabled = false; }
+        }
         async function loadConfig() {
           cfg = await apiGet("config");
           FIELDS.forEach((key) => {
             const input = el("field-" + key);
+            if (key === "workspace_id") return;
             if (BOOLS.has(key)) input.checked = cfg[key] !== false;
             else
               input.value = LISTS.has(key)
@@ -1682,6 +1735,7 @@
                   ? ""
                   : cfg[key];
           });
+          renderWorkspaces([]);
           const address = String(cfg.api_url || "");
           el("btn-open-multica").href = /^https?:\/\//i.test(address) ? address : "#";
           loaded = true;
@@ -1739,6 +1793,8 @@
           if (!loaded) return;
           const previousValue = cfg[key];
           cfg[key] = value;
+          if (key === "workspace_id") el("selected-workspace-id").textContent = value;
+          if (["api_url", "token"].includes(key)) renderWorkspaces([]);
           if (key === "workspace_id" && value !== previousValue) {
             cfg.project_id = "";
             el("field-project_id").value = "";
@@ -1747,6 +1803,8 @@
           }
           if (["api_url", "token", "workspace_id", "project_id"].includes(key)) {
             connectionRevision++;
+            el("test-result").className = "connection-result";
+            el("test-result").textContent = t("settings.ui.checkHint", "点击测试确认当前连接");
             el("agent-options").replaceChildren();
             agentList = []; closeAgentMenu();
             statusValue(
@@ -1879,25 +1937,30 @@
               return;
             }
             const ok = !!result.ok;
+            const connected = result.connected === undefined ? ok : !!result.connected;
+            renderWorkspaces(result.workspaces || [], connected);
             statusValue(
               "connection-state",
-              ok
+              connected
                 ? t("settings.test.ok", "连接成功")
                 : t("settings.ui.connectionError", "连接失败"),
-              ok ? "good" : "error",
+              connected ? "good" : "error",
             );
-            el("connection-detail").textContent = ok
+            el("connection-detail").textContent = connected
               ? result.workspace_name ||
                 t("settings.ui.verified", "已验证当前连接")
               : t("settings.ui.checkCredentials", "请检查 URL、Token 和网络");
             el("test-result").className =
-              "connection-result " + (ok ? "good" : "error");
-            el("test-result").textContent = ok
+              "connection-result " + (connected ? "good" : "error");
+            el("test-result").textContent = result.workspace_selection_required
+              ? t("settings.picker.connectedChoose", "连接成功，已读取工作区；请选择默认工作区后继续。")
+              : ok
               ? t("settings.test.ok", "连接成功") +
                 (result.workspace_name ? " · " + result.workspace_name : "")
               : result.message || t("settings.ui.connectionError", "连接失败");
           } catch (error) {
             if (revision !== connectionRevision) return;
+            renderWorkspaces([]);
             statusValue(
               "connection-state",
               t("settings.ui.connectionError", "连接失败"),
@@ -1909,8 +1972,8 @@
             button.disabled = false;
           }
         };
+        el("btn-workspaces").onclick = loadWorkspaces;
         for (const [button, endpoint, key, list] of [
-          ["btn-workspaces", "actions/list_workspaces", "workspaces", "workspace-options"],
           ["btn-projects", "actions/list_projects", "projects", "project-options"],
         ]) {
           el(button).onclick = async () => {
@@ -2031,6 +2094,9 @@
           tokenInput.disabled = true;
           el("btn-clear-token").disabled = true;
           connectionRevision++;
+          renderWorkspaces([]);
+          el("test-result").className = "connection-result";
+          el("test-result").textContent = t("settings.ui.checkHint", "点击测试确认当前连接");
           try {
             await doSave();
             await apiPost("actions/save_config", { clear_token: true });

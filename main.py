@@ -157,9 +157,9 @@ class Main(WorkModeMixin, WebApiMixin, Star):
         """检查 Multica 连接与当前工作区/项目状态。"""
         await self._run(event, partial(self._cmd_status, event))
 
-    @multica.command("inbox", alias={"收件箱"})
+    @multica.command("inbox", alias={"Issue列表", "issue列表", "收件箱"})
     async def multica_inbox(self, event: AstrMessageEvent) -> None:
-        """查看收件箱：最近 Issue 及进展。"""
+        """查看 Issue列表：最近 Issue 及进展。"""
         await self._run(
             event,
             partial(self._cmd_inbox, event, self._args(event, 2)),
@@ -254,7 +254,7 @@ class Main(WorkModeMixin, WebApiMixin, Star):
             f"可直接说：\n"
             f"• {kw} 建个issue：修复登录，优先级高\n"
             f"• 进入{kw}模式 / 切换为{kw}工作\n"
-            f"• {kw} 收件箱 10 open\n"
+            f"• {kw} Issue列表 10 open\n"
             f"• {kw} status / {kw} 帮助\n"
             f"也可使用指令：/multica help"
         )
@@ -763,7 +763,7 @@ class Main(WorkModeMixin, WebApiMixin, Star):
         # API 不支持按 updated_at 排序，拉取较新窗口后在本地方完成排序与截断
         result = await client.list_issues(limit=50)
         if not result["ok"]:
-            await self._reply(event, f"❌ 获取收件箱失败：{result['message']}")
+            await self._reply(event, f"❌ 获取Issue列表失败：{result['message']}")
             return
 
         issues = result.get("issues") or []
@@ -783,7 +783,7 @@ class Main(WorkModeMixin, WebApiMixin, Star):
 
         if not issues:
             empty_msg = {
-                "": "当前收件箱为空",
+                "": "当前Issue列表为空",
                 "open": "当前没有未完成的 Issue",
                 "done": "当前没有已完成的 Issue",
             }[status_filter]
@@ -796,7 +796,7 @@ class Main(WorkModeMixin, WebApiMixin, Star):
         }
         names = await client.resolve_assignee_names(assignee_ids)
 
-        head = f"📥 Multica 收件箱（最新创建 50 条内筛选，展示 {len(issues)} 条"
+        head = f"📋 Multica Issue列表（最新创建 50 条内筛选，展示 {len(issues)} 条"
         if status_filter == "open":
             head += " · 未完成"
         elif status_filter == "done":

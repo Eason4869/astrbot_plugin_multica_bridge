@@ -168,6 +168,8 @@ EXPECTED_COMMANDS = {
     "multica 状态",
     "multica inbox",
     "multica 收件箱",
+    "multica Issue列表",
+    "multica issue列表",
     # issue
     "multica issue create",
     "multica issue 新建",

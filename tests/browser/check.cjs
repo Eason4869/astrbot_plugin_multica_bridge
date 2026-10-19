@@ -56,6 +56,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
     assert.equal(await page.locator("#field-private_chat_mode").count(), 0);
     assert.equal(await page.locator(".allowlist-example").count(), 3);
     assert.equal(await page.locator(".reference-item").count(), 7);
+    assert.match(await page.locator(".advanced").textContent(), /Issue列表/);
+    assert.doesNotMatch(await page.locator(".advanced").textContent(), /收件箱/);
     assert.match(await page.locator("#allowlist-help").textContent(), /机器人ID:FriendMessage:用户QQ号/);
     assert.match(await page.locator("#allowlist-help").textContent(), /机器人ID:GroupMessage:群号/);
     const allowlist = ["用户QQ号", "机器人ID:FriendMessage:用户QQ号", "机器人ID:GroupMessage:群号", "demo-private-user"];
@@ -65,7 +67,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
     assert.deepEqual(read().multica_whitelist, allowlist);
     assert.equal(await page.locator("#field-multica_whitelist").inputValue(), allowlist.join("\n"));
     await page.locator("#btn-workspaces").click();
-    await page.waitForFunction(() => document.querySelectorAll("#workspace-options option").length === 1);
+    await page.waitForFunction(() => document.querySelectorAll("#field-workspace_id option[data-workspace]").length === 2);
     await page.locator("#btn-projects").click();
     await page.waitForFunction(() => document.querySelectorAll("#project-options option").length === 1);
     const priorProject = await page.locator("#field-project_id").inputValue();
@@ -164,6 +166,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
       () => document.querySelector("h1").textContent === "Multica workspace",
     );
     assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
+    assert.match(await page.locator(".advanced").textContent(), /Issue list/);
     await page.screenshot({
       path: path.join(directory, "desktop-english-dark.png"),
       fullPage: true,

@@ -124,7 +124,12 @@ async def start():
                         "id": original["workspace_id"],
                         "name": "本地验证工作区",
                         "slug": "validation",
-                    }
+                    },
+                    {
+                        "id": "00000000-0000-0000-0000-000000000002",
+                        "name": "生产验证工作区",
+                        "slug": "production-validation",
+                    },
                 ]
             )
         if tail == "projects":
