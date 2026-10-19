@@ -398,6 +398,9 @@ class Main(WorkModeMixin, WebApiMixin, Star):
                 return
 
             if not self._chat_allowed(event):
+                from .multica_client import PERMISSION_DENIED
+                await self._reply(event, PERMISSION_DENIED)
+                event.stop_event()
                 return
 
             await action()
@@ -409,10 +412,10 @@ class Main(WorkModeMixin, WebApiMixin, Star):
         """按黑白名单配置判断当前会话是否允许执行指令。"""
         from .multica_client import check_chat_allowed
 
-        chat_type = "group" if self._is_group_chat(event) else "private"
-        chat_id = self._get_chat_id(event)
+        chat_type = "user"
+        chat_id = str(event.get_sender_id() or "")
         cfg = getattr(self, "cfg", None) or {}
-        if chat_id and not check_chat_allowed(cfg, chat_type, chat_id):
+        if not check_chat_allowed(cfg, chat_type, chat_id, str(event.unified_msg_origin or "")):
             self.log.debug(
                 "[multica_bridge] 会话 %s (%s) 被过滤配置拦截",
                 chat_id,
@@ -939,7 +942,8 @@ class Main(WorkModeMixin, WebApiMixin, Star):
         key = getattr(event, "_multica_key", None)
         if key is not None and service and (service.closed or service.store.get(key)["generation"] != event._multica_generation):
             return
-        if getattr(event, "_multica_owned", False) and not text.startswith(PREFIX):
+        from .multica_client import PERMISSION_DENIED
+        if getattr(event, "_multica_owned", False) and not text.startswith(PREFIX) and text != PERMISSION_DENIED:
             text = PREFIX + text
         try:
             await event.send(MessageChain([Plain(text)]))

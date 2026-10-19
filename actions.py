@@ -61,6 +61,10 @@ def authorize_action(plugin, event, action_name: str, astrbot_cfg: dict | None =
 
 
 async def dispatch_action(plugin, event, request: ActionRequest) -> None:
+    if not plugin._chat_allowed(event):
+        from .multica_client import PERMISSION_DENIED
+        await plugin._reply(event, PERMISSION_DENIED)
+        return
     if not authorize_action(plugin, event, request.name):
         await plugin._reply(event, "权限不足或指令已停用，无法执行此 Multica 操作。")
         return

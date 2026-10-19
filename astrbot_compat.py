@@ -118,15 +118,14 @@ class WorkModeRouter:
                 await result
             if event.is_stopped():
                 return
-        if self.permission and not self.permission(event, cfg):
-            await self.service.reply(event, "权限不足，无法执行此 Multica 操作。")
-            return
         allowed = getattr(self.service.plugin, "_chat_allowed", None)
         if allowed and not allowed(event):
-            if state["active"]:
-                await self.service.reply(
-                    event, "本会话已被桥接访问规则限制；工作模式暂停转发。"
-                )
+            from .multica_client import PERMISSION_DENIED
+            # Denial is deliberately exact, without the work-result prefix.
+            await self.service.say(event, PERMISSION_DENIED)
+            return
+        if self.permission and not self.permission(event, cfg):
+            await self.service.reply(event, "权限不足，无法执行此 Multica 操作。")
             return
         await self.service.handle(event)
 

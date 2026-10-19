@@ -20,6 +20,10 @@ class WorkMode:
         self.client_factory = client_factory
         self.locks: dict[str, asyncio.Lock] = {}
         self.opening: dict[str, set[object]] = {}
+        self.opening_owners: dict[str, str] = {}
+        self.submission_epochs: dict[str, int] = {}
+        self.stopping: set[str] = set()
+        self.submissions: dict[str, asyncio.Task] = {}
         self.operations: set[asyncio.Task] = set()
         self.worker = ReplyWorker(store, push, self._delivery_permitted)
         self.closed = False
@@ -35,14 +39,17 @@ class WorkMode:
         from .multica_client import check_chat_allowed
 
         return check_chat_allowed(
-            cfg, record.get("chat_type", "private"), record.get("chat_id", "")
+            cfg, "user", record.get("owner_id", ""), record.get("access_origin", record.get("origin", ""))
         )
 
     def should_route(self, event) -> bool:
+        key = conversation_key(event)
+        state = self.store.get(key)
+        owner = state.get("owner_id") or self.opening_owners.get(key)
         return (
             bool(COMMAND.fullmatch((event.message_str or "").strip()))
-            or bool(self.opening.get(conversation_key(event)))
-            or self.store.get(conversation_key(event))["active"]
+            or ((bool(self.opening.get(key)) or state["active"])
+                and bool(owner) and owner == str(event.get_sender_id()))
         )
 
     async def reply(self, event, text: str) -> None:
@@ -76,6 +83,8 @@ class WorkMode:
             event.stop_event()
             return
         key = conversation_key(event)
+        if not self.should_route(event):
+            return
         text = (event.message_str or "").strip()
         matched = COMMAND.fullmatch(text)
         tail = (matched.group(1) or "").strip() if matched else ""
@@ -85,6 +94,17 @@ class WorkMode:
         )
         control = control.casefold() if matched else ""
         control = control or ("enter" if matched else "")
+        state = self.store.get(key)
+        owner = state.get("owner_id") if state["active"] else self.opening_owners.get(key)
+        if owner and owner != str(event.get_sender_id()) and control != "help":
+            await self.reply(event, "本群工作会话由其他成员开启，仅开启者可发送或控制；你的普通消息继续由 AstrBot 处理。")
+            event.stop_event()
+            return
+        if key in self.stopping and control != "exit":
+            await self.reply(event, "正在停止执行，请稍后重试。")
+            event.stop_event()
+            return
+        event._multica_submit_epoch = self.submission_epochs.get(key, 0)
         operation = asyncio.current_task()
         self.operations.add(operation)
         event._multica_key = key
@@ -94,8 +114,10 @@ class WorkMode:
         opening_token = object() if control in {"enter", "new", "agent"} else None
         if opening_token:
             self.opening.setdefault(key, set()).add(opening_token)
+            self.opening_owners[key] = str(event.get_sender_id())
         try:
             if control == "exit":
+                self.submission_epochs[key] = self.submission_epochs.get(key, 0) + 1
                 state = self.store.get(key)
                 self.store.update(key, active=False, generation=state["generation"] + 1)
                 event._multica_generation = state["generation"] + 1
@@ -105,6 +127,9 @@ class WorkMode:
                     event,
                     "已退出工作模式，恢复普通机器人。Multica 已接收的任务继续运行，后续结果请在 Multica 查看。",
                 )
+                return
+            if control == "stop":
+                await self._stop(event, key)
                 return
             legacy = matched and (
                 control not in CONTROLS or control in {"help", "status", "stop"}
@@ -121,6 +146,7 @@ class WorkMode:
                 if (
                     self.closed
                     or self.store.get(key)["generation"] != event._multica_generation
+                    or event._multica_submit_epoch != self.submission_epochs.get(key, 0)
                 ):
                     return
                 if control in {"enter", "new", "agent"}:
@@ -173,7 +199,30 @@ class WorkMode:
                 tokens.discard(opening_token)
                 if not tokens:
                     self.opening.pop(key, None)
+                    self.opening_owners.pop(key, None)
             event.stop_event()
+
+    async def _stop(self, event, key: str) -> None:
+        state = self.store.get(key)
+        if not state.get("session_id"):
+            await self.reply(event, "当前没有绑定的 Multica 对话。")
+            return
+        self.submission_epochs[key] = self.submission_epochs.get(key, 0) + 1
+        self.stopping.add(key)
+        try:
+            inflight = self.submissions.get(key)
+            if inflight:
+                try:
+                    await asyncio.shield(inflight)
+                except MulticaError:
+                    pass
+            if self.store.get(key)["generation"] != event._multica_generation:
+                return
+            await self._client(state).stop(state["session_id"])
+            uncertain = self.store.get(key).get("uncertain")
+            await self.reply(event, "已请求停止远端执行，本地旧排队消息已丢弃；仍处于工作模式。" + ("上一条提交结果仍待确认，请在 Multica 核对。" if uncertain else ""))
+        finally:
+            self.stopping.discard(key)
 
     def _client(self, state: dict):
         if state.get("connection") != connection_key(self.plugin.cfg):
@@ -184,12 +233,18 @@ class WorkMode:
 
     async def _enter(self, event, key: str, fresh: bool, choice: str) -> None:
         previous = self.store.get(key)
+        if previous.get("owner_migration_required") and not fresh:
+            raise MulticaError("旧共享会话缺少开启者信息，已暂停。请用 /multica new 新建仅本人可发送的会话")
+        if previous.get("owner_id") and previous["owner_id"] != str(event.get_sender_id()):
+            fresh = True
         generation = previous["generation"]
         settings = dict(self.plugin.cfg)
         fingerprint = connection_key(settings)
         group_id = str(event.get_group_id() or "")
         policy = {
             "connection": fingerprint,
+            "owner_id": str(event.get_sender_id()),
+            "access_origin": str(event.unified_msg_origin),
             "chat_type": "group" if group_id else "private",
             "chat_id": group_id or str(event.get_sender_id()),
         }
@@ -275,6 +330,9 @@ class WorkMode:
                 session_id=chat["id"],
                 agent_id=selected["id"],
                 agent_name=selected.get("name") or selected["id"],
+                owner_id=str(event.get_sender_id()),
+                access_origin=str(event.unified_msg_origin),
+                owner_migration_required=False,
                 workspace_id=client._workspace_id,
                 connection=fingerprint,
                 origin=origin,
@@ -288,7 +346,7 @@ class WorkMode:
             )
         event._multica_generation = current["generation"]
         self.worker.start(key, client)
-        scope = "本群共用" if event.get_group_id() else "当前私聊"
+        scope = "仅开启者的消息转发，其他群友继续使用 AstrBot；回复在群内可见" if event.get_group_id() else "当前私聊"
         await self.reply(
             event,
             f"已进入 Multica 工作模式（{scope}）。\n智能体：{current.get('agent_name', '')}\n项目：{self.plugin.cfg.get('project_id') or '未指定'}\n后续消息直接交给 Multica；/multica exit 退出，/multica new 开新对话。",
@@ -312,6 +370,8 @@ class WorkMode:
     async def _submit(self, event, key: str, text: str) -> None:
         state = self.store.get(key)
         if not state["active"]:
+            return
+        if state.get("owner_id") != str(event.get_sender_id()):
             return
         # Do not transcribe audio or silently drop attachments from mixed messages.
         components = event.get_messages()
@@ -368,6 +428,8 @@ class WorkMode:
         history = await client.messages(state["session_id"], state["cursor"])
         if not self.store.current(key, generation):
             return
+        if event._multica_submit_epoch != self.submission_epochs.get(key, 0):
+            return
         self._client(state)  # Revalidate after the await, before any external write.
         if not self._delivery_permitted(state):
             raise MulticaError("工作转发已暂停，请检查开关和访问规则")
@@ -380,7 +442,13 @@ class WorkMode:
             },
         )
         try:
-            result = await client.send_chat(state["session_id"], content)
+            submission = asyncio.create_task(client.send_chat(state["session_id"], content))
+            self.submissions[key] = submission
+            try:
+                result = await submission
+            finally:
+                if self.submissions.get(key) is submission:
+                    self.submissions.pop(key, None)
         except MulticaError as exc:
             if not exc.uncertain and self.store.current(key, generation):
                 self.store.update(key, uncertain=None)

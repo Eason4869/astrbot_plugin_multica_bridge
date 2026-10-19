@@ -96,6 +96,7 @@ def setup_service(tmp_path):
             "work_mode_enabled": True,
             "api_url": "https://example.test",
             "token": "secret",
+            "multica_whitelist": ["u1", "owner", "next"],
         }
     )
     service = module.WorkMode(
@@ -113,15 +114,15 @@ def test_work_mode_group_scope_prefix_continuity_exit_and_reload(tmp_path):
             assert all(
                 text.startswith("【来自 Multica｜工作模式】") for text in enter.replies
             )
-            assert service.should_route(Event("hello", user="u2"))
+            assert not service.should_route(Event("hello", user="u2"))
             assert not service.should_route(Event("hello", group="B"))
             assert not service.should_route(Event("hello", group="", user="C"))
             await service.handle(Event("第一问", message_id="q1"))
             await service.handle(Event("第一问", message_id="q1"))
-            await service.handle(Event("继续", user="u2", message_id="q2"))
+            await service.handle(Event("继续", user="u1", message_id="q2"))
             assert len(client.sent) == 2
             assert all(item[0] == "chat-1" for item in client.sent)
-            assert "u2" in client.sent[1][1]
+            assert "u1" in client.sent[1][1]
             restored, _, _ = setup_service(tmp_path)
             assert restored.should_route(Event("still working"))
             await restored.close()

@@ -88,30 +88,18 @@ def get_multica_config(cfg: dict[str, Any] | None) -> dict[str, Any]:
     return out
 
 
-def check_chat_allowed(cfg: dict[str, Any] | None, chat_type: str, chat_id: str) -> bool:
-    """检查指定会话是否在黑/白名单配置中允许执行。
+PERMISSION_DENIED = "您没有使用Multica的权限，请联系管理员获取使用资格"
 
-    chat_type: "group" 或 "private"
-    chat_id: 群号或用户 QQ 号（字符串）
-    返回 True 表示允许，False 表示应跳过。
-    """
-    if not isinstance(cfg, dict):
-        return True
-    mode_key = f"{chat_type}_chat_mode"
-    list_key = f"{chat_type}_chat_list"
-    mode = str(cfg.get(mode_key, "disabled"))
-    id_list = cfg.get(list_key, [])
-    if not isinstance(id_list, (list, tuple)):
-        id_list = []
-    # 转换为字符串列表
-    id_set = {str(i).strip() for i in id_list if str(i).strip()}
-    chat_str = str(chat_id).strip()
-    if mode == "blacklist":
-        return chat_str not in id_set
-    if mode == "whitelist":
-        return chat_str in id_set
-    # disabled: 不限制
-    return True
+
+def check_chat_allowed(cfg: dict[str, Any] | None, chat_type: str, chat_id: str, umo: str = "") -> bool:
+    """Legacy signature; authorization now always uses the sender user ID."""
+    if not isinstance(cfg, dict) or not str(chat_id).strip():
+        return False
+    allowed = cfg.get("multica_whitelist", [])
+    if not isinstance(allowed, (list, tuple)):
+        return False
+    entries = {str(i).strip() for i in allowed if str(i).strip()}
+    return str(chat_id).strip() in entries or bool(umo and umo in entries)
 
 
 class MulticaClient:

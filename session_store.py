@@ -53,6 +53,10 @@ class SessionStore:
                     item.get("active"), bool
                 ):
                     raise ValueError("工作模式会话记录损坏；原文件未修改")
+                item = dict(item)
+                if item.get("chat_type") == "group" and not item.get("owner_id"):
+                    item["active"] = False
+                    item["owner_migration_required"] = True
                 self.records[key] = item
 
     def get(self, key: str) -> dict:
