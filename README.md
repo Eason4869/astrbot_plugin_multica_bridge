@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/dev/logo.svg" width="88" height="88" alt="Multica Bridge" />
+<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.0.0/logo.svg" width="88" height="88" alt="Multica Bridge" />
 
 # AstrBot Multica Bridge
 
 **在 QQ 中进入 Multica，连续对话，随时退出。**
 
 ![Version](https://img.shields.io/badge/version-1.0.0-3456cf)
-![Branch](https://img.shields.io/badge/branch-dev-475569)
+![Branch](https://img.shields.io/badge/branch-main-475569)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)
 ![AstrBot](https://img.shields.io/badge/AstrBot-%E2%89%A54.27.2-4f8cff)
 
@@ -47,13 +47,13 @@
 
 需要 Python 3.10+、AstrBot 4.27.2+，以及能够访问的 Multica 服务。Multica 部署版本需提供 Chat API，并具备可用的智能体和运行环境；仅连接测试成功不代表智能体已能执行任务。
 
-### 1. 安装 dev 版本
+### 1. 安装正式版
 
-**1.0.0 当前位于 `dev` 分支。** 从仓库默认 `main` 分支安装不会获得本次改造。若 AstrBot 安装入口提供分支选项，选择 `dev`；也可在 AstrBot 插件目录手动安装：
+在 AstrBot 插件管理中通过仓库地址安装或更新：`https://github.com/Eason4869/astrbot_plugin_multica_bridge`。默认使用 `main` 分支；固定版本安装包见 [v1.0.0 Release](https://github.com/Eason4869/astrbot_plugin_multica_bridge/releases/tag/v1.0.0)。也可在 AstrBot 插件目录手动安装：
 
 ```bash
 cd AstrBot/data/plugins
-git clone --branch dev https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
+git clone https://github.com/Eason4869/astrbot_plugin_multica_bridge.git
 ```
 
 已安装的用户请先阅读下方升级说明。安装完成后重载插件或重启 AstrBot。
@@ -86,7 +86,7 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 - 工作模式与 Chat 绑定单独保存于 `work-mode.json`，重载后继续使用。
 - 配置文件损坏时保留原文件，请修复或从备份恢复后重载。
 
-建议升级前备份原插件数据。Git 安装可在原插件目录切换并更新 `dev` 分支；如存在本地修改，先保存修改再更新。升级后检查设置页并测试连接，然后在一个测试群验证进入、追问和退出。
+建议升级前备份原插件数据。Git 安装可在原插件目录切换并更新 `main` 分支；如存在本地修改，先保存修改再更新。升级后检查设置页并测试连接，然后在一个测试群验证进入、追问和退出。
 
 ## 工作模式
 
@@ -117,7 +117,7 @@ plugin_data/astrbot_plugin_multica_bridge/config.json
 
 ## WebUI 工作台
 
-<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/dev/assets/workbench.png" width="1100" alt="Multica 工作台：连接状态、工作模式开关、智能体与当前工作会话" />
+<img src="https://raw.githubusercontent.com/Eason4869/astrbot_plugin_multica_bridge/v1.0.0/assets/workbench.png" width="1100" alt="Multica 工作台：连接状态、工作模式开关、智能体与当前工作会话" />
 
 *界面示例，地址、群号与会话均为演示数据。*
 
@@ -203,12 +203,12 @@ multica 切换到项目 前端重构
 
 **升级后设置页看起来没变？**
 
-确认安装的是 `dev`，重载插件并刷新 AstrBot 页面；必要时强制刷新浏览器缓存。不要通过删除插件数据来刷新设置页。
+确认已更新到 1.0.0，重载插件并刷新 AstrBot 页面；必要时强制刷新浏览器缓存。不要通过删除插件数据来刷新设置页。
 
 **已经验证了哪些环境？**
 
-本地 Python 3.10 / 3.12 回归、旧配置覆盖升级、AstrBot 4.27.2 / 4.29.1 源码路由集成，以及 Edge 桌面／手机／主题切换验证已通过。尚未进行真实 QQ 和 Multica 服务联调。具体范围与复现方法见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/dev/docs/verification-1.0.0.md)。
+本地 Python 3.10 / 3.12 回归、旧配置覆盖升级、AstrBot 4.27.2 / 4.29.1 源码路由集成，以及 Edge 桌面／手机／主题切换验证已通过。尚未进行真实 QQ 和 Multica 服务联调。具体范围与复现方法见[验证记录](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.0.0/docs/verification-1.0.0.md)。
 
 ## 项目信息
 
-[更新日志](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/dev/CHANGELOG.md) · [问题反馈](https://github.com/Eason4869/astrbot_plugin_multica_bridge/issues) · [Multica](https://github.com/multica-ai/multica) · [AstrBot](https://github.com/AstrBotDevs/AstrBot) · [MIT License](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/dev/LICENSE)
+[更新日志](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.0.0/CHANGELOG.md) · [问题反馈](https://github.com/Eason4869/astrbot_plugin_multica_bridge/issues) · [Multica](https://github.com/multica-ai/multica) · [AstrBot](https://github.com/AstrBotDevs/AstrBot) · [MIT License](https://github.com/Eason4869/astrbot_plugin_multica_bridge/blob/v1.0.0/LICENSE)

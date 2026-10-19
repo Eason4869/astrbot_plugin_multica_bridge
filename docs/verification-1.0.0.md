@@ -66,4 +66,4 @@ node tests/browser/races.cjs
 
 保留原插件数据直接更新。确认设置页原 URL / Token 仍在，测试连接并选择可用智能体。在群 A 输入 `/multica` 后连续追问，检查每条回复前缀、其他插件与模型无重复回复；同时检查群 B / 私聊 C 正常。输入 `/multica exit`，确认群 A 恢复普通模式。退出不取消远端任务，如需取消请先执行 `/multica stop`。
 
-本次按用户要求以 1.0.0 推送至仓库 `dev` 分支；不创建 GitHub Release，不替换线上插件。远程 CI 结果以该提交的 Actions 运行记录为准。
+本次以 1.0.0 经 `dev → main` PR 发布，标签为 `v1.0.0`，Release 附带源码安装包；不替换线上插件。远程 CI 结果以对应提交的 Actions 运行记录为准。
